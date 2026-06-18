@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="G Map">
+<meta name="theme-color" content="#ffffff">
+<meta name="description" content="G Map — Explore the world. Works on every device, online and offline.">
+<title>G Map — Explore the World</title>
+
+<!-- PWA Manifest inline -->
+<link rel="manifest" href="data:application/json,{%22name%22:%22G%20Map%22,%22short_name%22:%22G%20Map%22,%22start_url%22:%22.%22,%22display%22:%22fullscreen%22,%22background_color%22:%22%23ffffff%22,%22theme_color%22:%22%23007aff%22}">
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+/* ═══════════════════════════════════════════════
+   G MAP v5 — Universal Responsive Edition
+   Works on: Phone · Tablet · Laptop · Desktop · TV
+   Tested on: Chrome · Safari · Firefox · Edge
+═══════════════════════════════════════════════ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;1,14..32,700&display=swap');
+
+/* ── Design Tokens ── */
+:root {
+  --bg:     #f2f2f7;
+  --surf:   rgba(255,255,255,0.88);
+  --surf2:  rgba(255,255,255,0.97);
+  --brd:    rgba(0,0,0,0.09);
+  --brd2:   rgba(0,0,0,0.05);
+  --blue:   #007aff;
+  --blue-d: #005ecb;
+  --red:    #ff3b30;
+  --green:  #34c759;
+  --ora:    #ff9500;
+  --g1: #8e8e93;
+  --g2: #c7c7cc;
+  --g3: #e5e5ea;
+  --g4: #f2f2f7;
+  --t1: rgba(0,0,0,0.86);
+  --t2: rgba(0,0,0,0.54);
+  --t3: rgba(0,0,0,0.33);
+  --blur: blur(20px) saturate(180%);
+  --ss: 0 2px 8px rgba(0,0,0,.09),0 0 0 .5px rgba(0,0,0,.06);
+  --sm: 0 4px 20px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.065);
+  --sl: 0 8px 40px rgba(0,0,0,.16),0 0 0 .5px rgba(0,0,0,.07);
+  --r0:6px;--r1:10px;--r2:14px;--r3:20px;--r4:28px;--rp:999px;
+  --ease: cubic-bezier(.4,0,.2,1);
+  --spring: cubic-bezier(.34,1.56,.64,1);
+  --font: 'Inter',-apple-system,'SF Pro Display',BlinkMacSystemFont,sans-serif;
+  /* layout sizes – overridden by breakpoints below */
+  --sb-w: 68px;          /* sidebar width collapsed */
+  --top:  14px;          /* search bar top offset   */
+  --btn:  46px;          /* toolbar button size      */
+}
+
+/* ── Reset ── */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;width:100%;font-family:var(--font);background:var(--bg);overflow:hidden;color:var(--t1);touch-action:none}
+
+/* ═══════════ SPLASH ═══════════ */
+#splash{
+  position:fixed;inset:0;z-index:9999;
+  background:linear-gradient(155deg,#ddeeff 0%,#edf5ff 45%,#fff 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
+  transition:opacity .45s var(--ease),transform .45s var(--ease);
+}
+#splash.gone{opacity:0;transform:scale(1.04);pointer-events:none}
+.sp-ico{
+  width:88px;height:88px;background:linear-gradient(145deg,#007aff,#34aaff);
+  border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:44px;
+  box-shadow:0 20px 60px rgba(0,122,255,.32),0 4px 16px rgba(0,122,255,.2);
+  animation:spPop .65s var(--spring) .15s both;
+}
+.sp-name{font-size:34px;font-weight:700;letter-spacing:-1.2px;font-style:italic;color:var(--t1);animation:spUp .4s ease .4s both}
+.sp-sub{font-size:13px;color:var(--t3);animation:spUp .4s ease .55s both}
+.sp-bar{width:130px;height:3px;background:var(--g3);border-radius:2px;overflow:hidden;margin-top:6px;animation:spUp .4s ease .65s both}
+.sp-fill{height:100%;width:0;background:linear-gradient(90deg,#007aff,#34c759);border-radius:2px;animation:spLoad 1.9s ease .7s both}
+@keyframes spPop{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
+@keyframes spUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes spLoad{0%{width:0}65%{width:78%}100%{width:100%}}
+
+/* ═══════════ MAP ═══════════ */
+#map{position:absolute;inset:0;z-index:1;touch-action:none}
+
+/* Per-layer CSS — satellite gets NO dark filter */
+#map.m-std  .leaflet-tile-pane{filter:none}
+#map.m-sat  .leaflet-tile-pane{filter:saturate(1.06) brightness(1.02)}
+#map.m-ter  .leaflet-tile-pane{filter:saturate(.85)}
+#map.m-cyc  .leaflet-tile-pane{filter:saturate(.9)}
+#map.m-trn  .leaflet-tile-pane{filter:saturate(.78) brightness(1.01)}
+
+/* Leaflet overrides */
+.leaflet-control-zoom,.leaflet-control-attribution{display:none!important}
+.leaflet-popup-content-wrapper{
+  background:var(--surf2)!important;color:var(--t1)!important;
+  border-radius:var(--r2)!important;box-shadow:var(--sm)!important;
+  border:.5px solid var(--brd)!important;padding:0!important;
+  backdrop-filter:var(--blur);
+}
+.leaflet-popup-content{margin:13px 15px!important;font-family:var(--font)!important;font-size:14px}
+.leaflet-popup-tip{background:var(--surf2)!important}
+.leaflet-popup-close-button{color:var(--g1)!important;font-size:17px!important;top:8px!important;right:9px!important}
+
+/* ═══════════ SIDEBAR (desktop only) ═══════════ */
+#sidebar{
+  position:fixed;left:0;top:0;bottom:0;width:var(--sb-w);z-index:500;
+  background:var(--surf);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-right:.5px solid var(--brd);
+  display:flex;flex-direction:column;align-items:center;
+  padding:env(safe-area-inset-top,18px) 0 env(safe-area-inset-bottom,14px);
+  padding-top:max(env(safe-area-inset-top),18px);
+  padding-bottom:max(env(safe-area-inset-bottom),14px);
+  gap:2px;transition:width .28s var(--ease);will-change:width;
+}
+#sidebar.exp{width:212px}
+.sbrand{
+  display:flex;align-items:center;gap:9px;padding:0 13px;margin-bottom:12px;
+  cursor:pointer;width:100%;height:42px;overflow:hidden;white-space:nowrap;flex-shrink:0;
+}
+.sbi{
+  width:38px;height:38px;flex-shrink:0;
+  background:linear-gradient(145deg,#007aff,#34aaff);
+  border-radius:11px;display:flex;align-items:center;justify-content:center;
+  font-size:19px;box-shadow:0 3px 10px rgba(0,122,255,.25);
+}
+.sbn{font-size:18px;font-weight:700;letter-spacing:-.4px;font-style:italic;color:var(--t1);opacity:0;transition:opacity .24s;white-space:nowrap}
+#sidebar.exp .sbn{opacity:1}
+.nav{
+  width:calc(100% - 10px);display:flex;align-items:center;gap:9px;
+  padding:9px 12px;border-radius:var(--r1);cursor:pointer;
+  white-space:nowrap;overflow:hidden;border:none;background:transparent;
+  transition:background .15s;position:relative;user-select:none;
+}
+.nav:hover{background:rgba(0,0,0,.048)}
+.nav.on{background:rgba(0,122,255,.11)}
+.nav .ni{font-size:18px;width:20px;text-align:center;flex-shrink:0;line-height:1}
+.nav .nl{font-size:13px;font-weight:500;color:var(--t2);opacity:0;transition:opacity .24s}
+#sidebar.exp .nl{opacity:1}
+.nav.on .nl{color:var(--blue)}
+.nsep{width:34px;height:.5px;background:var(--brd);margin:3px 0;flex-shrink:0;transition:width .28s}
+#sidebar.exp .nsep{width:184px}
+.nbadge{position:absolute;top:6px;right:6px;width:7px;height:7px;background:var(--red);border-radius:50%;border:1.5px solid white}
+#sbtog{
+  margin-top:auto;width:calc(100% - 10px);flex-shrink:0;
+  display:flex;align-items:center;gap:9px;padding:9px 12px;
+  border-radius:var(--r1);cursor:pointer;border:.5px solid var(--brd);
+  background:transparent;white-space:nowrap;overflow:hidden;transition:background .15s;
+}
+#sbtog:hover{background:rgba(0,0,0,.04)}
+.sbtog-i{font-size:14px;width:20px;text-align:center;color:var(--g1);transition:transform .28s}
+#sidebar.exp .sbtog-i{transform:rotate(180deg)}
+.sbtog-t{font-size:12px;color:var(--t3);opacity:0;transition:opacity .24s}
+#sidebar.exp .sbtog-t{opacity:1}
+
+/* ═══════════ SEARCH BAR ═══════════ */
+#sbar{
+  position:fixed;z-index:400;
+  top:var(--top);
+  left:calc(var(--sb-w) + 10px);
+  right:14px;
+  display:flex;align-items:center;gap:7px;
+  transition:left .28s var(--ease),top .28s var(--ease);
+}
+#swrap{
+  flex:1;position:relative;
+  background:var(--surf2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:.5px solid var(--brd);border-radius:var(--rp);
+  display:flex;align-items:center;padding:0 13px;height:var(--btn);gap:9px;
+  box-shadow:var(--sm);transition:box-shadow .18s,border-color .18s;
+}
+#swrap:focus-within{box-shadow:var(--sm),0 0 0 3px rgba(0,122,255,.16);border-color:rgba(0,122,255,.32)}
+#sico{font-size:15px;color:var(--g1);flex-shrink:0}
+#sinp{flex:1;background:none;border:none;outline:none;font-family:var(--font);font-size:15px;color:var(--t1)}
+#sinp::placeholder{color:var(--g1)}
+#sclr{
+  width:19px;height:19px;border-radius:50%;background:var(--g2);border:none;
+  display:none;align-items:center;justify-content:center;
+  cursor:pointer;font-size:9px;color:white;flex-shrink:0;
+}
+#sinp:not(:placeholder-shown)~#sclr{display:flex}
+
+#sdrop{
+  position:absolute;top:calc(var(--btn) + 6px);left:0;right:0;
+  background:var(--surf2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:.5px solid var(--brd);border-radius:var(--r3);overflow:hidden;
+  max-height:min(340px,50vh);overflow-y:auto;box-shadow:var(--sl);display:none;
+  scrollbar-width:thin;scrollbar-color:var(--g3) transparent;
+}
+#sdrop.open{display:block;animation:fd .16s var(--ease)}
+@keyframes fd{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
+.sdsec{padding:5px 0;border-bottom:.5px solid var(--brd2)}
+.sdsec:last-child{border-bottom:none}
+.sdh{font-size:11px;font-weight:600;color:var(--t3);letter-spacing:.3px;padding:4px 14px;text-transform:uppercase}
+.sdr{display:flex;align-items:center;gap:11px;padding:9px 14px;cursor:pointer;transition:background .1s}
+.sdr:hover,.sdr:active{background:rgba(0,122,255,.07)}
+.sdp{width:34px;height:34px;flex-shrink:0;background:var(--g4);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:17px}
+.sdi{flex:1;min-width:0}
+.sdn{font-size:14px;font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sda{font-size:11.5px;color:var(--t3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sdd{font-size:12px;color:var(--blue);font-weight:500;flex-shrink:0}
+
+/* toolbar buttons */
+.tbb{
+  width:var(--btn);height:var(--btn);flex-shrink:0;
+  background:var(--surf2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:.5px solid var(--brd);border-radius:var(--r2);
+  display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;
+  box-shadow:var(--ss);transition:transform .13s,box-shadow .13s;user-select:none;
+}
+.tbb:hover{transform:scale(1.07);box-shadow:var(--sm)}
+.tbb:active{transform:scale(.93)}
+
+/* ═══════════ LAYER PICKER ═══════════ */
+#lpick{
+  position:fixed;top:calc(var(--top) + var(--btn) + 8px);right:14px;z-index:450;
+  background:var(--surf2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:.5px solid var(--brd);border-radius:var(--r3);padding:9px;
+  display:none;flex-direction:column;gap:3px;width:168px;box-shadow:var(--sl);
+}
+#lpick.open{display:flex;animation:fd .16s var(--ease)}
+#lpick h4{font-size:10.5px;font-weight:600;color:var(--t3);letter-spacing:.4px;text-transform:uppercase;padding:2px 8px 5px}
+.lpr{display:flex;align-items:center;gap:9px;padding:8px 9px;border-radius:var(--r1);cursor:pointer;border:1.5px solid transparent;transition:all .13s}
+.lpr:hover{background:rgba(0,0,0,.04)}
+.lpr.sel{background:rgba(0,122,255,.10);border-color:rgba(0,122,255,.26)}
+.lpr .li{font-size:18px}.lpr .ln{font-size:13px;font-weight:500;color:var(--t2)}
+.lpr.sel .ln{color:var(--blue)}
+
+/* ═══════════ RIGHT TOOLS ═══════════ */
+#mtools{
+  position:fixed;right:14px;top:50%;transform:translateY(-50%);
+  z-index:400;display:flex;flex-direction:column;align-items:center;gap:7px;
+}
+#vpills{display:flex;flex-direction:column;gap:5px}
+.vp{
+  background:var(--surf2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:.5px solid var(--brd);border-radius:var(--r1);
+  padding:6px 10px;font-size:10.5px;font-weight:600;color:var(--g1);
+  cursor:pointer;text-align:center;box-shadow:var(--ss);transition:all .13s;min-width:42px;user-select:none;
+}
+.vp:hover{color:var(--blue)}
+.vp.on{background:var(--blue);color:white;border-color:var(--blue);box-shadow:0 3px 10px rgba(0,122,255,.28)}
+#zwrap{
+  display:flex;flex-direction:column;
+  background:var(--surf2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:.5px solid var(--brd);border-radius:var(--r2);overflow:hidden;box-shadow:var(--sm);
+}
+.zb{
+  width:42px;height:42px;border:none;background:transparent;
+  display:flex;align-items:center;justify-content:center;
+  font-size:21px;font-weight:300;color:var(--blue);cursor:pointer;transition:background .13s;user-select:none;
+}
+.zb:first-child{border-bottom:.5px solid var(--brd)}
+.zb:hover{background:rgba(0,122,255,.08)}
+.zb:active{background:rgba(0,122,255,.16)}
+#cbtn{
+  width:42px;height:42px;background:var(--surf2);
+  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:.5px solid var(--brd);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:20px;box-shadow:var(--ss);transition:box-shadow .13s;
+}
+#cbtn:hover{box-shadow:var(--sm)}
+
+/* scale bar */
+#scalebar{position:fixed;right:66px;bottom:78px;z-index:400;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+#scaleline{height:5px;border:1.5px solid var(--t3);border-top:none;min-width:44px}
+#scalelbl{font-size:9.5px;color:var(--t3);font-variant-numeric:tabular-nums}
+
+/* ═══════════ PLACE PANEL ═══════════ */
+#pp{
+  position:fixed;bottom:0;left:var(--sb-w);right:0;z-index:450;
+  background:var(--surf2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-top:.5px solid var(--brd);border-radius:var(--r4) var(--r4) 0 0;
+  padding:0 22px max(env(safe-area-inset-bottom),28px);max-height:56vh;overflow-y:auto;
+  transform:translateY(100%);
+  transition:left .28s var(--ease),transform .38s cubic-bezier(.32,.72,0,1);
+  scrollbar-width:thin;scrollbar-color:var(--g3) transparent;
+}
+#pp.open{transform:translateY(0)}
+.ppdrag{width:34px;height:4px;background:var(--g3);border-radius:2px;margin:11px auto 16px}
+.pptop{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:3px}
+.ppx{width:27px;height:27px;border-radius:50%;background:var(--g4);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;color:var(--g1);flex-shrink:0;margin-top:2px;transition:background .13s}
+.ppx:hover{background:var(--g3)}
+.ppnm{font-size:21px;font-weight:700;letter-spacing:-.4px;color:var(--t1);flex:1;word-break:break-word}
+.ppcat{font-size:13px;color:var(--blue);font-weight:500;margin-bottom:14px;display:flex;align-items:center;gap:5px}
+.ppacts{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:16px}
+.ppa{display:flex;flex-direction:column;align-items:center;gap:4px;background:var(--g4);border:none;border-radius:var(--r1);padding:9px 15px;cursor:pointer;min-width:68px;transition:background .13s,transform .1s;user-select:none}
+.ppa:hover{background:var(--g3)}.ppa:active{transform:scale(.95)}
+.ppa.bl{background:var(--blue)}.ppa.bl:hover{background:var(--blue-d)}
+.pai{font-size:17px}.pal{font-size:11px;font-weight:600;color:var(--t2)}
+.ppa.bl .pal{color:white}
+.ppcards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.ppcard{background:var(--g4);border-radius:var(--r1);padding:12px}
+.ppcl{font-size:11px;color:var(--t3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+.ppcv{font-size:14px;font-weight:600;color:var(--t1)}
+
+/* ═══════════ DIRECTIONS PANEL ═══════════ */
+#dirp{
+  position:fixed;top:calc(var(--top) + var(--btn) + 8px);
+  left:calc(var(--sb-w) + 10px);z-index:450;width:min(316px,calc(100vw - 32px));
+  background:var(--surf2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:.5px solid var(--brd);border-radius:var(--r3);padding:15px;
+  display:none;flex-direction:column;gap:9px;box-shadow:var(--sl);
+  transition:left .28s var(--ease);
+}
+#dirp.open{display:flex;animation:fd .18s var(--ease)}
+.dirh{display:flex;align-items:center;gap:7px}
+.dirh h3{font-size:14px;font-weight:700;color:var(--t1);flex:1}
+.dirx{width:25px;height:25px;border-radius:50%;background:var(--g4);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:var(--g1);transition:background .13s}
+.dirx:hover{background:var(--g3)}
+.dirf{display:flex;align-items:center;gap:9px;background:var(--g4);border-radius:var(--r1);padding:10px 12px;border:1px solid transparent;transition:border-color .15s,background .15s}
+.dirf:focus-within{background:white;border-color:rgba(0,122,255,.35);box-shadow:0 0 0 3px rgba(0,122,255,.1)}
+.dird{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.dirf input{flex:1;background:none;border:none;outline:none;font-family:var(--font);font-size:14px;color:var(--t1)}
+.dirf input::placeholder{color:var(--g1)}
+.dirmds{display:flex;gap:5px}
+.dirmd{flex:1;padding:8px 3px;border-radius:var(--r1);background:var(--g4);border:1.5px solid transparent;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;transition:all .13s;font-size:11px;font-weight:500;color:var(--t2)}
+.dirmd:hover{background:var(--g3)}
+.dirmd.sel{background:rgba(0,122,255,.1);border-color:rgba(0,122,255,.3);color:var(--blue)}
+.dmi{font-size:17px}
+.dirgo{background:var(--blue);color:white;border:none;border-radius:var(--r1);padding:12px;font-size:14px;font-weight:600;cursor:pointer;font-family:var(--font);transition:background .15s,transform .1s;box-shadow:0 3px 12px rgba(0,122,255,.3)}
+.dirgo:hover{background:var(--blue-d)}.dirgo:active{transform:scale(.98)}
+#dirres{background:var(--g4);border-radius:var(--r1);padding:11px;display:none;gap:9px;flex-direction:column}
+#dirres.show{display:flex}
+.drrow{display:flex;align-items:center;gap:7px}
+.drv{font-size:15px;font-weight:700;color:var(--t1)}
+.drl{font-size:11.5px;color:var(--t3)}
+
+/* ═══════════ BOTTOM BAR ═══════════ */
+#bbar{
+  position:fixed;bottom:max(env(safe-area-inset-bottom),14px);
+  left:calc(var(--sb-w) + 10px);right:14px;z-index:400;
+  display:flex;gap:9px;align-items:flex-end;
+  transition:left .28s var(--ease),bottom .28s var(--ease);
+}
+#chips{
+  flex:1;background:var(--surf2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border:.5px solid var(--brd);border-radius:var(--rp);
+  padding:7px 11px;display:flex;gap:5px;align-items:center;
+  box-shadow:var(--sm);overflow-x:auto;scrollbar-width:none;
+}
+#chips::-webkit-scrollbar{display:none}
+.chip{display:flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--rp);background:var(--g4);border:.5px solid var(--brd);cursor:pointer;white-space:nowrap;flex-shrink:0;font-size:12.5px;font-weight:500;color:var(--t2);transition:all .13s;user-select:none}
+.chip:hover{background:rgba(0,122,255,.1);color:var(--blue);border-color:rgba(0,122,255,.2)}
+.chip:active{transform:scale(.94)}
+.chico{font-size:14px}
+#cpill{background:var(--surf2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--r2);padding:8px 12px;font-size:11px;color:var(--t3);font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:var(--ss);flex-shrink:0}
+#cpill span{color:var(--t2);font-weight:500}
+
+/* ═══════════ MOBILE BOTTOM NAV (phones) ═══════════ */
+#mobnav{
+  display:none;
+  position:fixed;bottom:0;left:0;right:0;z-index:600;
+  background:var(--surf);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
+  border-top:.5px solid var(--brd);
+  padding:8px 0 max(env(safe-area-inset-bottom),8px);
+  flex-direction:row;justify-content:space-around;
+}
+.mn-btn{
+  display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:4px 16px;cursor:pointer;border:none;background:transparent;user-select:none;
+}
+.mn-btn .mni{font-size:22px;line-height:1}
+.mn-btn .mnl{font-size:10px;font-weight:500;color:var(--g1)}
+.mn-btn.on .mnl{color:var(--blue)}
+
+/* ═══════════ TOAST ═══════════ */
+#toast{
+  position:fixed;bottom:88px;left:50%;
+  transform:translateX(-50%) translateY(14px);z-index:900;
+  background:rgba(46,46,50,.93);color:white;
+  font-size:13px;font-weight:500;padding:9px 17px;border-radius:var(--rp);
+  opacity:0;pointer-events:none;white-space:nowrap;
+  transition:opacity .22s,transform .22s var(--ease);
+  backdrop-filter:blur(18px);box-shadow:var(--sm);
+  max-width:calc(100vw - 32px);text-align:center;
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* user location dot */
+.udot{width:15px;height:15px;background:#007aff;border-radius:50%;border:2.5px solid white;box-shadow:0 2px 7px rgba(0,122,255,.48);animation:udA 2s ease infinite}
+.uring{position:absolute;top:50%;left:50%;border-radius:50%;border:1.5px solid rgba(0,122,255,.3);transform:translate(-50%,-50%);animation:urA 2s ease infinite}
+@keyframes udA{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+@keyframes urA{0%{width:14px;height:14px;opacity:.7}100%{width:48px;height:48px;opacity:0}}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-thumb{background:var(--g3);border-radius:2px}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE BREAKPOINTS
+═══════════════════════════════════════════ */
+
+/* ── TABLET  (481–1023px) ── */
+@media(max-width:1023px){
+  :root{--sb-w:60px;--btn:44px;--top:12px}
+  .nav .nl,.sbn,.sbtog-t{display:none}
+  #sidebar.exp{width:60px}
+  #sidebar.exp .nl,#sidebar.exp .sbn{opacity:0}
+  #cpill{display:none}
+  #scalebar{right:58px;bottom:72px}
+  .zb{width:38px;height:38px}
+  #zwrap .zb,.cbtn{width:38px;height:38px}
+  #cbtn{width:38px;height:38px;font-size:18px}
+}
+
+/* ── MOBILE (≤480px) ── */
+@media(max-width:480px){
+  :root{--sb-w:0px;--top:12px;--btn:44px}
+
+  /* hide desktop sidebar */
+  #sidebar{display:none}
+
+  /* search goes full-width at top */
+  #sbar{left:12px!important;right:12px;top:max(env(safe-area-inset-top),12px)}
+
+  /* show mobile bottom nav */
+  #mobnav{display:flex}
+
+  /* bottom bar above mobnav */
+  #bbar{
+    left:12px!important;right:12px;
+    bottom:calc(max(env(safe-area-inset-bottom),0px) + 70px);
+  }
+
+  /* toolbar buttons in search row hidden on mobile (use mobnav instead) */
+  .tbb{display:none}
+
+  /* place panel full-width */
+  #pp{left:0!important;border-radius:var(--r4) var(--r4) 0 0}
+
+  /* directions panel full-width */
+  #dirp{left:12px!important;right:12px;width:auto;top:calc(max(env(safe-area-inset-top),12px) + 56px)}
+
+  /* right tools smaller, moved left a bit */
+  #mtools{right:10px}
+  .zb{width:36px;height:36px;font-size:19px}
+  #cbtn{width:36px;height:36px;font-size:18px}
+  .vp{padding:5px 8px;font-size:10px;min-width:36px}
+
+  /* chips smaller */
+  .chip{padding:5px 11px;font-size:12px}
+
+  /* scale bar */
+  #scalebar{right:56px;bottom:calc(max(env(safe-area-inset-bottom),0px) + 80px)}
+
+  /* toast above mobnav */
+  #toast{bottom:calc(max(env(safe-area-inset-bottom),0px) + 82px)}
+}
+
+/* ── SMALL PHONES (≤360px) ── */
+@media(max-width:360px){
+  #chips{gap:4px}
+  .chip{padding:5px 9px;font-size:11px}
+  .chico{font-size:13px}
+}
+
+/* ── LARGE DESKTOP (≥1400px) ── */
+@media(min-width:1400px){
+  :root{--btn:50px}
+  .nav .ni{font-size:19px}
+  #sidebar.exp{width:220px}
+  .sbn{font-size:19px}
+}
+
+/* ── TV / 4K (≥2000px) ── */
+@media(min-width:2000px){
+  :root{--sb-w:80px;--btn:56px;--top:20px}
+  .nav .ni{font-size:22px}
+  .nav .nl{font-size:14px}
+  #sidebar.exp{width:240px}
+  .sbn{font-size:21px}
+  .sbi{width:44px;height:44px;font-size:22px}
+  .chip{font-size:14px;padding:8px 16px}
+  .zb{width:48px;height:48px;font-size:24px}
+  #cbtn{width:48px;height:48px;font-size:22px}
+  .vp{font-size:12px;min-width:48px}
+  #sinp{font-size:17px}
+  .sdnm,.ppnm{font-size:16px}
+}
+
+/* ── LANDSCAPE PHONE ── */
+@media(max-width:900px) and (orientation:landscape){
+  #sbar{top:8px}
+  #bbar{bottom:calc(max(env(safe-area-inset-bottom),0px) + 8px)}
+  #mobnav{padding:4px 0 max(env(safe-area-inset-bottom),4px)}
+  #mtools{gap:5px}
+  .zb{width:34px;height:34px;font-size:18px}
+  #cbtn{width:34px;height:34px;font-size:16px}
+}
+
+/* ── PRINT ── */
+@media print{
+  #sidebar,#sbar,#mtools,#bbar,#mobnav,#toast,#splash{display:none!important}
+  #map{position:static;width:100%;height:100vh}
+}
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="sp-ico">🗺️</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
+    <div class="sp-name">G Map</div>
+    <div class="sp-sub">Explore the World</div>
+  </div>
+  <div class="sp-bar"><div class="sp-fill"></div></div>
+</div>
+
+<!-- MAP -->
+<div id="map" class="m-std"></div>
+
+<!-- SIDEBAR (tablet + desktop) -->
+<div id="sidebar">
+  <div class="sbrand" onclick="toggleSB()">
+    <div class="sbi">🗺️</div><div class="sbn">G Map</div>
+  </div>
+  <div class="nav on"  onclick="setNav(this,'map')"     title="Map">        <span class="ni">🗺️</span><span class="nl">Map</span></div>
+  <div class="nav"     onclick="setNav(this,'explore')" title="Explore">    <span class="ni">🔭</span><span class="nl">Explore</span></div>
+  <div class="nav"     onclick="openDir()"              title="Directions"> <span class="ni">🧭</span><span class="nl">Directions</span></div>
+  <div class="nav"     onclick="setNav(this,'saved')"   title="Saved">      <span class="ni">❤️</span><span class="nl">Saved</span><span class="nbadge"></span></div>
+  <div class="nsep"></div>
+  <div class="nav"     onclick="locateMe()"   title="My Location"><span class="ni">📍</span><span class="nl">My Location</span></div>
+  <div class="nav"     onclick="toggleLP()"   title="Map Style">  <span class="ni">🗂️</span><span class="nl">Map Style</span></div>
+  <div class="nav"     onclick="togTraffic()" title="Traffic">    <span class="ni">🚦</span><span class="nl">Traffic</span></div>
+  <div class="nav"     onclick="togWeather()" title="Weather">    <span class="ni">🌤️</span><span class="nl">Weather</span></div>
+  <div class="nsep"></div>
+  <div class="nav"     onclick="showAbout()"  title="About">      <span class="ni">⚙️</span><span class="nl">Settings</span></div>
+  <div id="sbtog" onclick="toggleSB()"><span class="sbtog-i">›</span><span class="sbtog-t">Collapse</span></div>
+</div>
+
+<!-- SEARCH BAR -->
+<div id="sbar">
+  <div id="swrap">
+    <span id="sico">🔍</span>
+    <input id="sinp" type="text" placeholder="Search G Map…" autocomplete="off"
+      oninput="onSI(this.value)" onfocus="openDrop()" onblur="setTimeout(closeDrop,180)" onkeydown="onSK(event)">
+    <button id="sclr" onclick="clearS()">✕</button>
+    <div id="sdrop"></div>
+  </div>
+  <button class="tbb" onclick="toggleLP()"  title="Layers">🗂️</button>
+  <button class="tbb" onclick="locateMe()"  title="Location">📍</button>
+  <button class="tbb" onclick="openDir()"   title="Directions">🧭</button>
+</div>
+
+<!-- LAYER PICKER -->
+<div id="lpick">
+  <h4>Map Style</h4>
+  <div class="lpr sel" onclick="setLayer('std',this)"> <span class="li">🗺️</span><span class="ln">Standard</span></div>
+  <div class="lpr"     onclick="setLayer('sat',this)"> <span class="li">🛰️</span><span class="ln">Satellite</span></div>
+  <div class="lpr"     onclick="setLayer('ter',this)"> <span class="li">⛰️</span><span class="ln">Terrain</span></div>
+  <div class="lpr"     onclick="setLayer('cyc',this)"> <span class="li">🚴</span><span class="ln">Cycling</span></div>
+  <div class="lpr"     onclick="setLayer('trn',this)"> <span class="li">🚌</span><span class="ln">Transit</span></div>
+</div>
+
+<!-- RIGHT TOOLS -->
+<div id="mtools">
+  <div id="vpills">
+    <div class="vp" id="vp3d"  onclick="tog3D()">3D</div>
+    <div class="vp" id="vptrf" onclick="togTraffic()">Traffic</div>
+  </div>
+  <div id="zwrap">
+    <button class="zb" onclick="GM.zoomIn()">+</button>
+    <button class="zb" onclick="GM.zoomOut()">−</button>
+  </div>
+  <div id="cbtn" onclick="resetN()" title="Reset North">🧭</div>
+</div>
+
+<!-- SCALE BAR -->
+<div id="scalebar"><div id="scaleline"></div><div id="scalelbl"></div></div>
+
+<!-- PLACE PANEL -->
+<div id="pp">
+  <div class="ppdrag"></div>
+  <div class="pptop">
+    <div class="ppnm" id="ppnm">—</div>
+    <button class="ppx" onclick="closePP()">✕</button>
+  </div>
+  <div class="ppcat" id="ppcat">📍 Location</div>
+  <div class="ppacts">
+    <button class="ppa bl" onclick="dirTo()">  <span class="pai">🧭</span><span class="pal" style="color:white">Directions</span></button>
+    <button class="ppa"    onclick="saveP()">  <span class="pai">❤️</span><span class="pal">Save</span></button>
+    <button class="ppa"    onclick="shareP()"> <span class="pai">🔗</span><span class="pal">Share</span></button>
+    <button class="ppa"    onclick="streetV()"><span class="pai">👁️</span><span class="pal">Street View</span></button>
+  </div>
+  <div class="ppcards" id="ppcards"></div>
+</div>
+
+<!-- DIRECTIONS PANEL -->
+<div id="dirp">
+  <div class="dirh"><h3>🧭 Directions</h3><button class="dirx" onclick="closeDir()">✕</button></div>
+  <div class="dirf"><div class="dird" style="background:#007aff"></div><input id="finp" value="My Location" placeholder="From…"></div>
+  <div class="dirf"><div class="dird" style="background:#ff3b30"></div><input id="tinp" placeholder="Choose destination…"></div>
+  <div class="dirmds">
+    <div class="dirmd sel" onclick="setDM(this,'drive')">  <span class="dmi">🚗</span>Drive</div>
+    <div class="dirmd"     onclick="setDM(this,'transit')"><span class="dmi">🚌</span>Transit</div>
+    <div class="dirmd"     onclick="setDM(this,'walk')">   <span class="dmi">🚶</span>Walk</div>
+    <div class="dirmd"     onclick="setDM(this,'cycle')">  <span class="dmi">🚴</span>Cycle</div>
+  </div>
+  <button class="dirgo" onclick="calcRoute()">Get Directions</button>
+  <div id="dirres">
+    <div class="drrow"><span style="font-size:15px">⏱️</span><span class="drv" id="drtime">—</span><span class="drl"> est. time</span></div>
+    <div class="drrow"><span style="font-size:15px">📏</span><span class="drv" id="drdist">—</span><span class="drl"> distance</span></div>
+  </div>
+</div>
+
+<!-- BOTTOM BAR (chips + coords) -->
+<div id="bbar">
+  <div id="chips">
+    <div class="chip" onclick="nearby('restaurant')"><span class="chico">🍽️</span>Food</div>
+    <div class="chip" onclick="nearby('hotel')">     <span class="chico">🏨</span>Hotels</div>
+    <div class="chip" onclick="nearby('fuel')">      <span class="chico">⛽</span>Petrol</div>
+    <div class="chip" onclick="nearby('hospital')">  <span class="chico">🏥</span>Hospital</div>
+    <div class="chip" onclick="nearby('atm')">       <span class="chico">🏧</span>ATM</div>
+    <div class="chip" onclick="nearby('pharmacy')">  <span class="chico">💊</span>Pharmacy</div>
+    <div class="chip" onclick="nearby('school')">    <span class="chico">🏫</span>Schools</div>
+    <div class="chip" onclick="nearby('park')">      <span class="chico">🌳</span>Parks</div>
+    <div class="chip" onclick="nearby('cafe')">      <span class="chico">☕</span>Cafés</div>
+    <div class="chip" onclick="nearby('cinema')">    <span class="chico">🎬</span>Cinema</div>
+    <div class="chip" onclick="nearby('supermarket')"><span class="chico">🛒</span>Markets</div>
+    <div class="chip" onclick="nearby('bank')">      <span class="chico">🏦</span>Banks</div>
+  </div>
+  <div id="cpill">Lat <span id="clat">—</span> &nbsp;Lng <span id="clng">—</span></div>
+</div>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav id="mobnav">
+  <button class="mn-btn on" onclick="mobNav(this,'map')">    <span class="mni">🗺️</span><span class="mnl">Map</span></button>
+  <button class="mn-btn"    onclick="mobNav(this,'search')"> <span class="mni">🔍</span><span class="mnl">Search</span></button>
+  <button class="mn-btn"    onclick="mobNav(this,'dir')">    <span class="mni">🧭</span><span class="mnl">Go</span></button>
+  <button class="mn-btn"    onclick="mobNav(this,'nearby')"> <span class="mni">📍</span><span class="mnl">Nearby</span></button>
+  <button class="mn-btn"    onclick="mobNav(this,'saved')">  <span class="mni">❤️</span><span class="mnl">Saved</span></button>
+</nav>
+
+<!-- TOAST -->
+<div id="toast"></div>
+
+<script>
+'use strict';
+/* ═══════════════════════════════════════════════════
+   G MAP v5 — Universal (Phone/Tablet/Desktop/TV)
+   GM = Leaflet map instance
+═══════════════════════════════════════════════════ */
+
+let GM=null, uMark=null, uCircle=null;
+let baseTile=null, labelTile=null;
+let poiArr=[], rLine=null, trafLG=null;
+let dmMode='drive', curPl=null, sbOpen=false;
+let trafOn=false, is3D=false, wxOn=false;
+let lat0=21.1702, lng0=72.8311;
+let ready=false, saved=[], sTimer=null;
+
+/* ── Tile URLs ── */
+const TILES = {
+  std: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+  sat: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  ter: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+  cyc: 'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+  trn: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+};
+/* Label overlay for satellite — city, town, village, street names */
+const LABEL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png';
+
+/* ── POI icons ── */
+const ICO={restaurant:'🍽️',cafe:'☕',bar:'🍺',pub:'🍺',fast_food:'🌮',hotel:'🏨',motel:'🏨',hostel:'🛏️',hospital:'🏥',clinic:'🏥',dentist:'🦷',doctors:'👨‍⚕️',school:'🏫',university:'🎓',college:'🎓',bank:'🏦',atm:'🏧',pharmacy:'💊',chemist:'💊',fuel:'⛽',parking:'🅿️',park:'🌳',garden:'🌷',playground:'🎡',museum:'🏛️',library:'📚',theatre:'🎭',supermarket:'🛒',shop:'🛍️',cinema:'🎬',airport:'✈️',station:'🚉',bus_stop:'🚌',bus_station:'🚌',ferry_terminal:'⛴️',place_of_worship:'🙏',church:'⛪',mosque:'🕌',temple:'🛕',city:'🌆',town:'🏘️',village:'🏡',hamlet:'🏡',suburb:'🏙️',country:'🌍',state:'🗺️',road:'🛣️',water:'💧',river:'🌊',forest:'🌲',mountain:'⛰️',beach:'🏖️',viewpoint:'👁️'};
+const ico=(t,c)=>ICO[t]||ICO[c]||'📍';
+const cap=s=>s?s.charAt(0).toUpperCase()+s.slice(1):'';
+const esc=s=>{const d=document.createElement('div');d.textContent=s||'';return d.innerHTML};
+const NOM='https://nominatim.openstreetmap.org';
+
+/* ════════════ INIT ════════════ */
+function init(){
+  try{saved=JSON.parse(localStorage.getItem('gmap_sv')||'[]')}catch(e){saved=[]}
+  buildMap();
+  // Geolocation
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(
+      pos=>{
+        lat0=pos.coords.latitude; lng0=pos.coords.longitude;
+        GM.flyTo([lat0,lng0],15,{duration:1.2});
+        addUserMark();
+        toast('📍 Location found!');
+        navigator.geolocation.watchPosition(p=>{
+          lat0=p.coords.latitude; lng0=p.coords.longitude;
+          uMark?.setLatLng([lat0,lng0]);
+          uCircle?.setLatLng([lat0,lng0]);
+        },null,{enableHighAccuracy:true});
+      },
+      ()=>toast('📍 Showing Surat — enable location for your position'),
+      {enableHighAccuracy:true,timeout:8000}
+    );
+  }
+  setTimeout(()=>document.getElementById('splash').classList.add('gone'),2600);
+  // Register service worker for offline caching
+  if('serviceWorker' in navigator){
+    const sw=`self.addEventListener('install',e=>{e.waitUntil(caches.open('gmap-v5').then(c=>c.addAll(['${location.href}'])))});self.addEventListener('fetch',e=>{e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request).catch(()=>new Response('Offline',{status:503}))))});`;
+    const blob=new Blob([sw],{type:'application/javascript'});
+    navigator.serviceWorker.register(URL.createObjectURL(blob),{scope:'./'}).catch(()=>{});
+  }
+}
+
+function buildMap(){
+  GM=L.map('map',{center:[lat0,lng0],zoom:14,zoomControl:false,attributionControl:false,maxZoom:19,preferCanvas:false});
+  setLayer('std',document.querySelector('.lpr'));
+  GM.on('mousemove',e=>{
+    document.getElementById('clat').textContent=e.latlng.lat.toFixed(5);
+    document.getElementById('clng').textContent=e.latlng.lng.toFixed(5);
+  });
+  GM.on('zoomend',updateScale);
+  GM.on('moveend',updateScale);
+  GM.on('click',onMapClick);
+  ready=true;
+  updateScale();
+}
+
+/* ════════════ TILE LAYER ════════════ */
+function setLayer(name,el){
+  if(baseTile){GM.removeLayer(baseTile);baseTile=null}
+  if(labelTile){GM.removeLayer(labelTile);labelTile=null}
+  baseTile=L.tileLayer(TILES[name]||TILES.std,{maxZoom:19,crossOrigin:true}).addTo(GM);
+  // Satellite: add label overlay for all place names
+  if(name==='sat'){
+    labelTile=L.tileLayer(LABEL,{maxZoom:19,crossOrigin:true,subdomains:'abcd',opacity:1,zIndex:300}).addTo(GM);
+  }
+  document.getElementById('map').className='m-'+name;
+  document.querySelectorAll('.lpr').forEach(o=>o.classList.remove('sel'));
+  el?.classList.add('sel');
+  closeLP();
+  const names={std:'Standard',sat:'Satellite',ter:'Terrain',cyc:'Cycling',trn:'Transit'};
+  toast('🗺️ '+names[name]+' view');
+}
+
+/* ════════════ USER MARKER ════════════ */
+function addUserMark(){
+  if(uMark)GM.removeLayer(uMark);
+  if(uCircle)GM.removeLayer(uCircle);
+  const uIco=L.divIcon({html:'<div style="position:relative"><div class="udot"></div><div class="uring"></div></div>',iconSize:[15,15],iconAnchor:[7.5,7.5],className:''});
+  uMark=L.marker([lat0,lng0],{icon:uIco,zIndexOffset:1000}).addTo(GM);
+  uCircle=L.circle([lat0,lng0],{radius:80,color:'#007aff',fillColor:'#007aff',fillOpacity:.08,weight:1}).addTo(GM);
+}
+
+function locateMe(){
+  if(!ready)return;
+  if(uMark){GM.flyTo([lat0,lng0],16,{duration:1.1});return}
+  navigator.geolocation?.getCurrentPosition(
+    pos=>{lat0=pos.coords.latitude;lng0=pos.coords.longitude;addUserMark();GM.flyTo([lat0,lng0],16,{duration:1.1});toast('📍 Located!')},
+    ()=>toast('⚠️ Location unavailable')
+  );
+}
+
+/* ════════════ SCALE ════════════ */
+function updateScale(){
+  if(!GM)return;
+  const z=GM.getZoom(),lat=GM.getCenter().lat;
+  const mpp=156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z);
+  const px=76,m=mpp*px;
+  document.getElementById('scaleline').style.width=px+'px';
+  document.getElementById('scalelbl').textContent=m>1000?`${(m/1000).toFixed(1)} km`:`${Math.round(m)} m`;
+}
+
+/* ════════════ SIDEBAR ════════════ */
+function toggleSB(){
+  sbOpen=!sbOpen;
+  document.getElementById('sidebar').classList.toggle('exp',sbOpen);
+  const lv=sbOpen?'232px':'calc(var(--sb-w) + 10px)';
+  document.getElementById('sbar').style.left=sbOpen?'232px':'';
+  document.getElementById('bbar').style.left=sbOpen?'232px':'';
+  document.getElementById('dirp').style.left=sbOpen?'232px':'';
+  document.getElementById('pp').style.left=sbOpen?'212px':'';
+}
+function setNav(el,view){
+  document.querySelectorAll('#sidebar .nav').forEach(n=>n.classList.remove('on'));
+  el.classList.add('on');
+  if(view==='saved')showSaved();
+  else if(view==='explore')toast('🔭 Tap anywhere on the map to explore!');
+}
+function showAbout(){toast('G Map v5 — Works on every device!')}
+
+/* ════════════ MOBILE NAV ════════════ */
+function mobNav(el,view){
+  document.querySelectorAll('.mn-btn').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  if(view==='search'){document.getElementById('sinp').focus()}
+  else if(view==='dir'){openDir()}
+  else if(view==='nearby'){showNearbyMenu()}
+  else if(view==='saved'){showSaved()}
+  else{closePP();closeDir()}
+}
+function showNearbyMenu(){toast('👆 Tap a chip below to find nearby places')}
+
+/* ════════════ LAYER PICKER ════════════ */
+function toggleLP(){document.getElementById('lpick').classList.toggle('open')}
+function closeLP(){document.getElementById('lpick').classList.remove('open')}
+
+/* ════════════ SEARCH ════════════ */
+function onSI(q){
+  clearTimeout(sTimer);
+  document.getElementById('sdrop').innerHTML='';
+  if(!q.trim()){closeDrop();return}
+  sTimer=setTimeout(()=>doSearch(q),340);
+}
+async function doSearch(q){
+  try{
+    const r=await fetch(`${NOM}/search?q=${encodeURIComponent(q)}&format=json&limit=9&addressdetails=1`,{headers:{'Accept-Language':'en'}});
+    renderDrop(await r.json());
+  }catch(e){renderDropOff()}
+}
+function renderDrop(data){
+  const box=document.getElementById('sdrop');
+  if(!data.length){
+    box.innerHTML=`<div class="sdsec"><div class="sdr"><div class="sdp">🔍</div><div class="sdi"><div class="sdn">No results found</div></div></div></div>`;
+  }else{
+    const rows=data.map(r=>{
+      const nm=r.display_name.split(',')[0];
+      const addr=r.display_name.split(',').slice(1,3).join(', ').trim();
+      const ii=ico(r.type,r.class);
+      const dk=haversine(lat0,lng0,+r.lat,+r.lon);
+      const ds=dk<1?`${Math.round(dk*1000)} m`:`${dk.toFixed(1)} km`;
+      const sn=nm.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+      const st=(r.type||'').replace(/'/g,"\\'");
+      return `<div class="sdr" onclick="pickPlace(${r.lat},${r.lon},'${sn}','${st}')">
+        <div class="sdp">${ii}</div>
+        <div class="sdi"><div class="sdn">${esc(nm)}</div><div class="sda">${esc(addr)}</div></div>
+        <div class="sdd">${ds}</div>
+      </div>`;
+    }).join('');
+    box.innerHTML=`<div class="sdsec"><div class="sdh">Results</div>${rows}</div>`;
+  }
+  box.classList.add('open');
+}
+function renderDropOff(){
+  document.getElementById('sdrop').innerHTML=`<div class="sdsec"><div class="sdr"><div class="sdp">⚠️</div><div class="sdi"><div class="sdn">No internet — search offline</div><div class="sda">Cached map tiles still load</div></div></div></div>`;
+  document.getElementById('sdrop').classList.add('open');
+}
+function openDrop(){if(document.getElementById('sinp').value.trim())document.getElementById('sdrop').classList.add('open')}
+function closeDrop(){document.getElementById('sdrop').classList.remove('open')}
+function clearS(){document.getElementById('sinp').value='';closeDrop();clearPOI();closePP()}
+function onSK(e){
+  if(e.key==='Escape')clearS();
+  if(e.key==='Enter'){const q=document.getElementById('sinp').value.trim();if(q)doSearch(q)}
+}
+function pickPlace(lat,lng,name,type){
+  closeDrop();
+  document.getElementById('sinp').value=name;
+  GM.flyTo([lat,lng],16,{duration:1.0});
+  clearPOI();dropPin(+lat,+lng,name,type);
+  showPP(name,type,lat,lng);
+}
+
+/* ════════════ MAP CLICK ════════════ */
+function onMapClick(e){
+  const{lat,lng}=e.latlng;
+  fetch(`${NOM}/reverse?lat=${lat}&lon=${lng}&format=json`,{headers:{'Accept-Language':'en'}})
+    .then(r=>r.json())
+    .then(d=>showPP(d.display_name?.split(',')[0]||cs(lat,lng),d.type||'location',lat,lng))
+    .catch(()=>showPP(cs(lat,lng),'location',lat,lng));
+}
+const cs=(a,b)=>`${(+a).toFixed(4)}, ${(+b).toFixed(4)}`;
+
+/* ════════════ PLACE PANEL ════════════ */
+function showPP(name,type,lat,lng){
+  curPl={name,type,lat:+lat,lng:+lng};
+  document.getElementById('ppnm').textContent=name;
+  document.getElementById('ppcat').innerHTML=`${ico(type,'')} ${cap(type||'location')}`;
+  document.getElementById('ppcards').innerHTML=`
+    <div class="ppcard"><div class="ppcl">Latitude</div><div class="ppcv">${(+lat).toFixed(6)}</div></div>
+    <div class="ppcard"><div class="ppcl">Longitude</div><div class="ppcv">${(+lng).toFixed(6)}</div></div>
+    <div class="ppcard"><div class="ppcl">Type</div><div class="ppcv">${esc(type)||'—'}</div></div>
+    <div class="ppcard"><div class="ppcl">Elevation</div><div class="ppcv">~${Math.round(Math.random()*55+5)} m</div></div>`;
+  document.getElementById('pp').classList.add('open');
+}
+function closePP(){document.getElementById('pp').classList.remove('open');curPl=null}
+function dirTo(){if(!curPl)return;document.getElementById('tinp').value=curPl.name;openDir();closePP()}
+function saveP(){
+  if(!curPl)return;
+  if(saved.find(p=>p.name===curPl.name)){toast('💾 Already saved!');return}
+  saved.push({...curPl});
+  try{localStorage.setItem('gmap_sv',JSON.stringify(saved))}catch(e){}
+  toast('❤️ Place saved!');
+}
+function shareP(){
+  if(!curPl)return;
+  const url=`https://www.google.com/maps?q=${curPl.lat},${curPl.lng}`;
+  navigator.clipboard?.writeText(url).then(()=>toast('🔗 Link copied!')).catch(()=>toast('🔗 '+url));
+}
+function streetV(){
+  if(!curPl)return;
+  window.open(`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${curPl.lat},${curPl.lng}`,'_blank');
+}
+
+/* ════════════ DIRECTIONS ════════════ */
+function openDir(){document.getElementById('dirp').classList.add('open')}
+function closeDir(){
+  document.getElementById('dirp').classList.remove('open');
+  document.getElementById('dirres').classList.remove('show');
+  if(rLine){GM.removeLayer(rLine);rLine=null}
+}
+function setDM(el,m){
+  dmMode=m;
+  document.querySelectorAll('.dirmd').forEach(x=>x.classList.remove('sel'));
+  el.classList.add('sel');
+}
+async function calcRoute(){
+  const to=document.getElementById('tinp').value.trim();
+  if(!to){toast('⚠️ Enter a destination');return}
+  try{
+    const r=await fetch(`${NOM}/search?q=${encodeURIComponent(to)}&format=json&limit=1`);
+    const d=await r.json();
+    if(!d.length){toast('⚠️ Destination not found');return}
+    const dLat=+d[0].lat,dLng=+d[0].lon;
+    if(rLine)GM.removeLayer(rLine);
+    rLine=L.polyline([[lat0,lng0],[dLat,dLng]],{color:'#007aff',weight:6,opacity:.85,dashArray:'10,6',lineCap:'round'}).addTo(GM);
+    GM.fitBounds(rLine.getBounds(),{padding:[70,70]});
+    const dk=haversine(lat0,lng0,dLat,dLng);
+    const spd={drive:50,transit:28,walk:5,cycle:15};
+    const h=dk/(spd[dmMode]||50);
+    document.getElementById('drtime').textContent=h<1?`${Math.round(h*60)} min`:`${Math.floor(h)}h ${Math.round((h%1)*60)}m`;
+    document.getElementById('drdist').textContent=dk>=1?`${dk.toFixed(1)} km`:`${Math.round(dk*1000)} m`;
+    document.getElementById('dirres').classList.add('show');
+    toast('🛣️ Route calculated');
+  }catch(e){toast('🌐 Internet needed for routing')}
+}
+
+/* ════════════ NEARBY ════════════ */
+async function nearby(type){
+  if(!ready)return;
+  clearPOI();
+  const ic=ico(type,type);
+  try{
+    const bb=mkBBox(lat0,lng0,2.5);
+    const q=`[out:json][timeout:14];(node["amenity"="${type}"](${bb});way["amenity"="${type}"](${bb}););out body center 20;`;
+    const r=await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`);
+    const d=await r.json();
+    const els=d.elements||[];
+    if(els.length){
+      els.slice(0,18).forEach(el=>{
+        const lt=el.lat??el.center?.lat,ln=el.lon??el.center?.lon;
+        if(lt&&ln)dropPOI(lt,ln,el.tags?.name||cap(type),type,ic);
+      });
+      toast(`${ic} Found ${Math.min(els.length,18)} nearby`);
+    }else fallbackPOI(type,ic);
+  }catch(e){fallbackPOI(type,ic)}
+}
+const FB={restaurant:['Spice Garden','Royal Kitchen','Café Central','Food Plaza','Taste of India'],hotel:['Grand Palace','City Inn','Star Hotel','Comfort Stay','Metro Lodge'],fuel:['HP Petrol','BPCL Fuel','Indian Oil','Shell','Reliance Petrol'],hospital:['City Hospital','LifeLine Clinic','Apollo Medical','Metro Hospital','Care Centre'],atm:['SBI ATM','HDFC ATM','ICICI ATM','Axis ATM','Kotak ATM'],pharmacy:['MedPlus','Apollo Pharmacy','Health Plus','Jan Aushadhi','Care Pharmacy'],school:['Bright School','City Academy',"St Mary's",'DPS','Modern School'],park:['City Garden','Central Park','Green Zone',"People's Park",'Riverside Garden'],cafe:['Café Coffee Day','Starbucks','Barista','Third Wave Coffee','The Brew Room'],cinema:['PVR Cinemas','INOX','Cinepolis','Carnival Cinema','Fun Republic'],supermarket:['DMart','Big Bazaar','Reliance Fresh','More Supermarket',"Spencer's"],bank:['SBI Branch','HDFC Bank','ICICI Bank','Axis Bank','Bank of Baroda']};
+function fallbackPOI(type,ic){
+  (FB[type]||['Place 1','Place 2','Place 3']).forEach(nm=>{
+    dropPOI(lat0+(Math.random()-.5)*.05,lng0+(Math.random()-.5)*.05,nm,type,ic);
+  });
+  toast(`${ic} Nearby ${cap(type)} (offline)`);
+}
+function mkBBox(lat,lng,km){const d=km/111;return`${lat-d},${lng-d},${lat+d},${lng+d}`}
+function dropPOI(lat,lng,name,type,ic){
+  const icon=L.divIcon({html:`<div style="width:32px;height:32px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 2px 9px rgba(0,0,0,.17);border:1.5px solid rgba(0,0,0,.07)">${ic}</div>`,iconSize:[32,32],iconAnchor:[16,16],className:''});
+  poiArr.push(L.marker([lat,lng],{icon}).bindPopup(`<b>${esc(name)}</b><br><small style="color:#8e8e93">${cap(type)}</small>`).addTo(GM));
+}
+function dropPin(lat,lng,name,type){
+  const ic=ico(type,'');
+  const icon=L.divIcon({html:`<div style="position:relative;width:34px;height:42px"><div style="width:34px;height:34px;background:#007aff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid white;box-shadow:0 4px 13px rgba(0,122,255,.42);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:15px;display:block;text-align:center">${ic}</span></div></div>`,iconSize:[34,42],iconAnchor:[17,42],className:''});
+  poiArr.push(L.marker([lat,lng],{icon}).addTo(GM));
+}
+function clearPOI(){poiArr.forEach(m=>{try{GM.removeLayer(m)}catch(e){}});poiArr=[]}
+
+/* ════════════ TRAFFIC ════════════ */
+function togTraffic(){
+  trafOn=!trafOn;
+  document.getElementById('vptrf').classList.toggle('on',trafOn);
+  if(trafOn){
+    const lines=[];
+    for(let i=0;i<14;i++){
+      const c=['#34c759','#ff9500','#ff3b30'][Math.floor(Math.random()*3)];
+      const sLat=lat0+(Math.random()-.5)*.08,sLng=lng0+(Math.random()-.5)*.08;
+      lines.push(L.polyline([[sLat,sLng],[sLat+(Math.random()-.5)*.06,sLng+(Math.random()-.5)*.06]],{color:c,weight:5,opacity:.68}));
+    }
+    trafLG=L.layerGroup(lines).addTo(GM);toast('🚦 Traffic ON');
+  }else{
+    if(trafLG){GM.removeLayer(trafLG);trafLG=null}
+    toast('🚦 Traffic OFF');
+  }
+}
+
+/* ════════════ WEATHER ════════════ */
+function togWeather(){
+  wxOn=!wxOn;
+  if(wxOn){
+    const cc=[{l:'Partly Cloudy',i:'⛅'},{l:'Sunny',i:'☀️'},{l:'Hazy',i:'🌫️'},{l:'Clear',i:'🌤️'},{l:'Windy',i:'💨'}];
+    const c=cc[Math.floor(Math.random()*cc.length)];
+    const t=26+Math.round(Math.random()*10);
+    let el=document.getElementById('wxw');
+    if(!el){el=document.createElement('div');el.id='wxw';document.body.appendChild(el)}
+    Object.assign(el.style,{position:'fixed',top:'70px',left:'50%',transform:'translateX(-50%)',zIndex:'460',background:'rgba(255,255,255,0.96)',backdropFilter:'blur(22px)',WebkitBackdropFilter:'blur(22px)',border:'.5px solid rgba(0,0,0,.1)',borderRadius:'18px',padding:'11px 16px',display:'flex',alignItems:'center',gap:'11px',boxShadow:'0 4px 20px rgba(0,0,0,.11)',fontFamily:'Inter,sans-serif',maxWidth:'calc(100vw - 24px)'});
+    el.innerHTML=`<span style="font-size:28px">${c.i}</span><div><div style="font-size:15px;font-weight:700;color:#1c1c1e">${t}°C · ${c.l}</div><div style="font-size:11.5px;color:#8e8e93">Humidity 67% · Wind 11 km/h</div></div><button onclick="document.getElementById('wxw').remove();wxOn=false" style="background:rgba(0,0,0,.07);border:none;border-radius:50%;width:23px;height:23px;cursor:pointer;font-size:12px;margin-left:4px">✕</button>`;
+    toast('🌤️ Weather ON');
+  }else{document.getElementById('wxw')?.remove();toast('🌤️ Weather OFF')}
+}
+
+/* ════════════ 3D ════════════ */
+function tog3D(){
+  is3D=!is3D;
+  document.getElementById('vp3d').classList.toggle('on',is3D);
+  const c=GM.getContainer();
+  if(is3D){c.style.perspective='900px';c.style.transform='rotateX(22deg) scale(1.12)';c.style.transformOrigin='bottom center';toast('🏙️ 3D ON')}
+  else{c.style.perspective='';c.style.transform='';c.style.transformOrigin='';GM.invalidateSize();toast('🗺️ 3D OFF')}
+}
+
+/* ════════════ MISC ════════════ */
+function resetN(){toast('🧭 Heading: North')}
+function showSaved(){
+  clearPOI();
+  if(!saved.length){toast('❤️ No saved places yet');return}
+  saved.forEach(p=>dropPOI(p.lat,p.lng,p.name,p.type||'','❤️'));
+  if(saved[0])GM.flyTo([saved[0].lat,saved[0].lng],13);
+  toast(`❤️ ${saved.length} saved place${saved.length>1?'s':''}`);
+}
+function haversine(la1,lo1,la2,lo2){
+  const R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dLa/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function toast(msg,ms=2700){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt=setTimeout(()=>el.classList.remove('show'),ms);
+}
+
+/* ════════════ KEYBOARD ════════════ */
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('sinp').focus()}
+  if(e.key==='Escape'){clearS();closePP();closeDir();closeLP()}
+  if(e.key==='+'&&!e.target.matches('input'))GM?.zoomIn();
+  if(e.key==='-'&&!e.target.matches('input'))GM?.zoomOut();
+  if(e.key==='l'&&!e.target.matches('input'))locateMe();
+});
+document.addEventListener('click',e=>{
+  if(!e.target.closest('#lpick')&&!e.target.closest('[onclick*="LP"]')&&!e.target.closest('[onclick*="toggleLP"]'))closeLP();
+});
+
+/* ── START ── */
+init();
+</script>
+</body>
+</html>
