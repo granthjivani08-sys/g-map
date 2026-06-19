@@ -5,106 +5,59 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,viewport-fit=cover">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <title>G Map</title>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-
-/* ══════════════════════════════════════════════
-   G MAP v5 — Full fixes:
-   • OSRM real road routing
-   • Multi-language UI + map labels
-   • No bounce/boomerang on map
-   • Proper mobile layout (centered, bottom nav)
-   • CartoDB Voyager = all labels everywhere
-══════════════════════════════════════════════ */
-:root {
-  --blue:#007aff; --blue-d:#005ecb;
-  --red:#ff3b30;  --green:#34c759; --orange:#ff9500;
-  --g1:#8e8e93;   --g2:#c7c7cc;   --g3:#e5e5ea;  --g4:#f2f2f7;
-  --t1:rgba(0,0,0,.86); --t2:rgba(0,0,0,.54); --t3:rgba(0,0,0,.33);
-  --s1:rgba(255,255,255,.88); --s2:rgba(255,255,255,.97);
-  --brd:rgba(0,0,0,.09); --brd2:rgba(0,0,0,.05);
+:root{
+  --blue:#007aff;--blue-d:#005ecb;--red:#ff3b30;--green:#34c759;--orange:#ff9500;
+  --g1:#8e8e93;--g2:#c7c7cc;--g3:#e5e5ea;--g4:#f2f2f7;
+  --t1:rgba(0,0,0,.86);--t2:rgba(0,0,0,.54);--t3:rgba(0,0,0,.33);
+  --s1:rgba(255,255,255,.88);--s2:rgba(255,255,255,.97);
+  --brd:rgba(0,0,0,.09);--brd2:rgba(0,0,0,.05);
   --blur:blur(20px) saturate(180%);
   --ss:0 2px 8px rgba(0,0,0,.09),0 0 0 .5px rgba(0,0,0,.06);
   --sm:0 4px 20px rgba(0,0,0,.12),0 0 0 .5px rgba(0,0,0,.065);
   --sl:0 8px 40px rgba(0,0,0,.16),0 0 0 .5px rgba(0,0,0,.07);
-  --rsm:10px; --rmd:14px; --rlg:20px; --rxl:26px; --rp:999px;
+  --rsm:10px;--rmd:14px;--rlg:20px;--rxl:26px;--rp:999px;
   --ease:cubic-bezier(.4,0,.2,1);
   --font:'Inter',-apple-system,BlinkMacSystemFont,sans-serif;
-  --sb:68px;    /* sidebar width collapsed */
-  --topbar:60px;
-  --botbar:72px;
+  --sb:68px;--topbar:60px;--botbar:72px;
   --safe-b:env(safe-area-inset-bottom,0px);
-  --safe-l:env(safe-area-inset-left,0px);
 }
-
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-font-smoothing:antialiased}
-html,body{height:100%;width:100%;font-family:var(--font);background:#f2f2f7;overflow:hidden;color:var(--t1);overscroll-behavior:none}
-
-/* ── SPLASH ── */
-#splash{
-  position:fixed;inset:0;z-index:9999;
-  background:linear-gradient(155deg,#deeeff,#edf5ff 45%,#fff);
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;
-  transition:opacity .4s var(--ease),transform .4s var(--ease);
-}
+html,body{height:100%;width:100%;font-family:var(--font);background:#f2f2f7;overflow:hidden;color:var(--t1)}
+/* SPLASH */
+#splash{position:fixed;inset:0;z-index:9999;background:linear-gradient(155deg,#deeeff,#edf5ff 45%,#fff);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;transition:opacity .4s,transform .4s}
 #splash.gone{opacity:0;transform:scale(1.03);pointer-events:none}
-.sp-ico{width:80px;height:80px;background:linear-gradient(145deg,#007aff,#34aaff);border-radius:20px;
-  display:flex;align-items:center;justify-content:center;font-size:38px;
-  box-shadow:0 16px 50px rgba(0,122,255,.32);animation:spB .6s cubic-bezier(.34,1.56,.64,1) .1s both}
+.sp-ico{width:80px;height:80px;background:linear-gradient(145deg,#007aff,#34aaff);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:38px;box-shadow:0 16px 50px rgba(0,122,255,.32);animation:spB .6s cubic-bezier(.34,1.56,.64,1) .1s both}
 .sp-nm{font-size:30px;font-weight:700;letter-spacing:-1px;font-style:italic;color:var(--t1)}
 .sp-sub{font-size:12px;color:var(--t3)}
 .sp-bar{width:120px;height:3px;background:var(--g3);border-radius:2px;overflow:hidden}
-.sp-fill{height:100%;width:0;background:linear-gradient(90deg,#007aff,#34c759);border-radius:2px;animation:spL 1.8s ease .6s both}
+.sp-fill{height:100%;width:0;background:linear-gradient(90deg,#007aff,#34c759);border-radius:2px;animation:spL 1.8s ease .5s both}
 @keyframes spB{from{opacity:0;transform:scale(.4)}to{opacity:1;transform:scale(1)}}
 @keyframes spL{0%{width:0}65%{width:75%}100%{width:100%}}
-
-/* ── MAP ── */
+/* MAP */
 #map{position:absolute;inset:0;z-index:1}
-/* No global tile filter — scoped per mode */
-#map.m-standard  .leaflet-tile-pane{filter:none}
+#map.m-standard .leaflet-tile-pane{filter:none}
 #map.m-satellite .leaflet-tile-pane{filter:saturate(1.05) brightness(1.02)}
-#map.m-terrain   .leaflet-tile-pane{filter:saturate(.88)}
-#map.m-cycle     .leaflet-tile-pane{filter:saturate(.92)}
-#map.m-transit   .leaflet-tile-pane{filter:saturate(.78)}
-
+#map.m-terrain .leaflet-tile-pane{filter:saturate(.88)}
+#map.m-cycle .leaflet-tile-pane{filter:saturate(.92)}
+#map.m-transit .leaflet-tile-pane{filter:saturate(.78)}
 .leaflet-control-zoom,.leaflet-control-attribution{display:none!important}
-.leaflet-popup-content-wrapper{
-  background:var(--s2)!important;color:var(--t1)!important;
-  border-radius:var(--rmd)!important;box-shadow:var(--sm)!important;
-  border:.5px solid var(--brd)!important;padding:0!important}
+.leaflet-popup-content-wrapper{background:var(--s2)!important;color:var(--t1)!important;border-radius:var(--rmd)!important;box-shadow:var(--sm)!important;border:.5px solid var(--brd)!important;padding:0!important}
 .leaflet-popup-content{margin:12px 14px!important;font-family:var(--font)!important;font-size:13px}
 .leaflet-popup-tip{background:var(--s2)!important}
 .leaflet-popup-close-button{color:var(--g1)!important;font-size:16px!important;top:7px!important;right:8px!important}
-
-/* ══════════════════════
-   DESKTOP LAYOUT (≥ 640px)
-══════════════════════ */
-
-/* ── SIDEBAR (desktop only) ── */
-#sidebar{
-  position:fixed;left:0;top:0;bottom:0;width:var(--sb);z-index:500;
-  background:var(--s1);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border-right:.5px solid var(--brd);
-  display:flex;flex-direction:column;align-items:center;
-  padding:16px 0 14px;gap:2px;
-  transition:width .26s var(--ease);
-}
+/* SIDEBAR desktop */
+#sidebar{position:fixed;left:0;top:0;bottom:0;width:var(--sb);z-index:500;background:var(--s1);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-right:.5px solid var(--brd);display:flex;flex-direction:column;align-items:center;padding:16px 0 14px;gap:2px;transition:width .26s var(--ease)}
 #sidebar.exp{width:210px}
-.sbrand{display:flex;align-items:center;gap:8px;padding:0 12px;margin-bottom:10px;
-  cursor:pointer;width:100%;height:40px;overflow:hidden;white-space:nowrap}
-.sbico{width:36px;height:36px;flex-shrink:0;background:linear-gradient(145deg,#007aff,#34aaff);
-  border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;
-  box-shadow:0 3px 10px rgba(0,122,255,.25)}
-.sbnm{font-size:17px;font-weight:700;letter-spacing:-.4px;font-style:italic;color:var(--t1);
-  opacity:0;transition:opacity .22s;white-space:nowrap}
+.sbrand{display:flex;align-items:center;gap:8px;padding:0 12px;margin-bottom:10px;cursor:pointer;width:100%;height:40px;overflow:hidden;white-space:nowrap}
+.sbico{width:36px;height:36px;flex-shrink:0;background:linear-gradient(145deg,#007aff,#34aaff);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 3px 10px rgba(0,122,255,.25)}
+.sbnm{font-size:17px;font-weight:700;letter-spacing:-.4px;font-style:italic;color:var(--t1);opacity:0;transition:opacity .22s;white-space:nowrap}
 #sidebar.exp .sbnm{opacity:1}
-.nav{width:calc(100% - 8px);display:flex;align-items:center;gap:8px;padding:9px 11px;
-  border-radius:var(--rsm);cursor:pointer;white-space:nowrap;overflow:hidden;
-  border:none;background:transparent;transition:background .14s;position:relative}
+.nav{width:calc(100% - 8px);display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:var(--rsm);cursor:pointer;white-space:nowrap;overflow:hidden;border:none;background:transparent;transition:background .14s;position:relative}
 .nav:hover{background:rgba(0,0,0,.046)}
 .nav.on{background:rgba(0,122,255,.1)}
 .nav .ni{font-size:17px;width:20px;text-align:center;flex-shrink:0}
@@ -113,742 +66,308 @@ html,body{height:100%;width:100%;font-family:var(--font);background:#f2f2f7;over
 .nav.on .nl{color:var(--blue)}
 .nsep{width:32px;height:.5px;background:var(--brd);margin:3px 0;transition:width .26s}
 #sidebar.exp .nsep{width:182px}
-.nbadge{position:absolute;top:5px;right:5px;width:6px;height:6px;background:var(--red);
-  border-radius:50%;border:1.5px solid white}
-#sbtog{margin-top:auto;width:calc(100% - 8px);display:flex;align-items:center;gap:8px;
-  padding:9px 11px;border-radius:var(--rsm);cursor:pointer;border:.5px solid var(--brd);
-  background:transparent;white-space:nowrap;overflow:hidden;transition:background .14s}
+.nbadge{position:absolute;top:5px;right:5px;width:6px;height:6px;background:var(--red);border-radius:50%;border:1.5px solid white}
+#sbtog{margin-top:auto;width:calc(100% - 8px);display:flex;align-items:center;gap:8px;padding:9px 11px;border-radius:var(--rsm);cursor:pointer;border:.5px solid var(--brd);background:transparent;white-space:nowrap;overflow:hidden;transition:background .14s}
 #sbtog:hover{background:rgba(0,0,0,.04)}
 #sbtog .ti{font-size:13px;width:20px;text-align:center;color:var(--g1);transition:transform .26s}
 #sidebar.exp #sbtog .ti{transform:rotate(180deg)}
 #sbtog .tl{font-size:11px;color:var(--t3);opacity:0;transition:opacity .22s}
 #sidebar.exp #sbtog .tl{opacity:1}
-
-/* ── TOP SEARCH BAR ── */
-#topbar{
-  position:fixed;top:0;left:var(--sb);right:0;height:var(--topbar);z-index:400;
-  padding:8px 10px;display:flex;align-items:center;gap:7px;
-  transition:left .26s var(--ease);
-}
-#swrap{
-  flex:1;position:relative;
-  background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:var(--rp);
-  display:flex;align-items:center;padding:0 12px;height:44px;gap:8px;
-  box-shadow:var(--sm);transition:box-shadow .16s,border-color .16s;
-}
+/* TOPBAR */
+#topbar{position:fixed;top:0;left:var(--sb);right:0;height:var(--topbar);z-index:400;padding:8px 10px;display:flex;align-items:center;gap:7px;transition:left .26s var(--ease)}
+#swrap{flex:1;position:relative;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--rp);display:flex;align-items:center;padding:0 12px;height:44px;gap:8px;box-shadow:var(--sm);transition:box-shadow .16s,border-color .16s}
 #swrap:focus-within{box-shadow:var(--sm),0 0 0 3px rgba(0,122,255,.15);border-color:rgba(0,122,255,.3)}
 #sico{font-size:14px;color:var(--g1);flex-shrink:0}
 #sinp{flex:1;background:none;border:none;outline:none;font-family:var(--font);font-size:15px;color:var(--t1)}
 #sinp::placeholder{color:var(--g1)}
-#sclr{width:18px;height:18px;border-radius:50%;background:var(--g2);border:none;
-  display:none;align-items:center;justify-content:center;
-  cursor:pointer;font-size:9px;color:white;flex-shrink:0;transition:background .12s}
+#sclr{width:18px;height:18px;border-radius:50%;background:var(--g2);border:none;display:none;align-items:center;justify-content:center;cursor:pointer;font-size:9px;color:white;flex-shrink:0;transition:background .12s}
 #sclr:hover{background:var(--g1)}
 #sinp:not(:placeholder-shown)~#sclr{display:flex}
-
-/* search dropdown */
-#sdrop{
-  position:absolute;top:50px;left:0;right:0;
-  background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:var(--rlg);overflow:hidden;
-  max-height:320px;overflow-y:auto;box-shadow:var(--sl);display:none;
-  scrollbar-width:thin;scrollbar-color:var(--g3) transparent;
-}
+#sdrop{position:absolute;top:50px;left:0;right:0;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--rlg);overflow:hidden;max-height:320px;overflow-y:auto;box-shadow:var(--sl);display:none;scrollbar-width:thin}
 #sdrop.open{display:block;animation:fd .15s var(--ease)}
 @keyframes fd{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}
-.sdsec{padding:5px 0;border-bottom:.5px solid var(--brd2)}
-.sdsec:last-child{border-bottom:none}
-.sdh{font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.3px;padding:3px 13px;text-transform:uppercase}
+.sdsec{padding:5px 0;border-bottom:.5px solid var(--brd2)}.sdsec:last-child{border-bottom:none}
+.sdh{font-size:10px;font-weight:600;color:var(--t3);padding:3px 13px;text-transform:uppercase;letter-spacing:.3px}
 .sdr{display:flex;align-items:center;gap:10px;padding:9px 13px;cursor:pointer;transition:background .1s}
 .sdr:hover,.sdr:active{background:rgba(0,122,255,.07)}
-.sdp{width:32px;height:32px;flex-shrink:0;background:var(--g4);border-radius:8px;
-  display:flex;align-items:center;justify-content:center;font-size:16px}
+.sdp{width:32px;height:32px;flex-shrink:0;background:var(--g4);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
 .sdi{flex:1;min-width:0}
 .sdn{font-size:14px;font-weight:500;color:var(--t1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sda{font-size:11px;color:var(--t3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .sdd{font-size:11px;color:var(--blue);font-weight:500;flex-shrink:0}
-
-/* top-bar icon buttons */
-.tbb{width:44px;height:44px;flex-shrink:0;background:var(--s2);
-  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:var(--rmd);
-  display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;
-  box-shadow:var(--ss);transition:transform .12s,box-shadow .12s}
-.tbb:hover{transform:scale(1.06);box-shadow:var(--sm)}
-.tbb:active{transform:scale(.93)}
-
-/* ── LAYER PICKER ── */
-#lpick{
-  position:fixed;top:66px;right:12px;z-index:450;
-  background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:var(--rlg);padding:8px;
-  display:none;flex-direction:column;gap:2px;width:160px;box-shadow:var(--sl);
-}
+.tbb{width:44px;height:44px;flex-shrink:0;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--rmd);display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;box-shadow:var(--ss);transition:transform .12s,box-shadow .12s}
+.tbb:hover{transform:scale(1.06);box-shadow:var(--sm)}.tbb:active{transform:scale(.93)}
+/* LAYER PICKER */
+#lpick{position:fixed;top:66px;right:12px;z-index:450;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--rlg);padding:8px;display:none;flex-direction:column;gap:2px;width:160px;box-shadow:var(--sl)}
 #lpick.open{display:flex;animation:fd .15s var(--ease)}
-#lpick h4{font-size:10px;font-weight:600;color:var(--t3);letter-spacing:.4px;text-transform:uppercase;padding:2px 7px 4px}
-.lpr{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--rsm);
-  cursor:pointer;border:1.5px solid transparent;transition:all .12s}
-.lpr:hover{background:rgba(0,0,0,.04)}
-.lpr.sel{background:rgba(0,122,255,.09);border-color:rgba(0,122,255,.24)}
-.lpr .li{font-size:17px}.lpr .ln{font-size:12.5px;font-weight:500;color:var(--t2)}
-.lpr.sel .ln{color:var(--blue)}
-
-/* ── RIGHT TOOLS ── */
-#mtools{
-  position:fixed;right:12px;top:50%;transform:translateY(-50%);
-  z-index:400;display:flex;flex-direction:column;align-items:center;gap:6px;
-}
+#lpick h4{font-size:10px;font-weight:600;color:var(--t3);text-transform:uppercase;padding:2px 7px 4px;letter-spacing:.4px}
+.lpr{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--rsm);cursor:pointer;border:1.5px solid transparent;transition:all .12s}
+.lpr:hover{background:rgba(0,0,0,.04)}.lpr.sel{background:rgba(0,122,255,.09);border-color:rgba(0,122,255,.24)}
+.lpr .li{font-size:17px}.lpr .ln{font-size:12.5px;font-weight:500;color:var(--t2)}.lpr.sel .ln{color:var(--blue)}
+/* RIGHT TOOLS */
+#mtools{position:fixed;right:12px;top:50%;transform:translateY(-50%);z-index:400;display:flex;flex-direction:column;align-items:center;gap:6px}
 #vpills{display:flex;flex-direction:column;gap:4px}
-.vp{background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:var(--rsm);
-  padding:5px 9px;font-size:10px;font-weight:600;color:var(--g1);
-  cursor:pointer;text-align:center;box-shadow:var(--ss);transition:all .12s;min-width:40px}
-.vp:hover{color:var(--blue)}
-.vp.on{background:var(--blue);color:white;border-color:var(--blue);box-shadow:0 3px 10px rgba(0,122,255,.28)}
-#zwrap{display:flex;flex-direction:column;background:var(--s2);
-  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:var(--rmd);overflow:hidden;box-shadow:var(--sm)}
-.zb{width:40px;height:40px;border:none;background:transparent;
-  display:flex;align-items:center;justify-content:center;
-  font-size:20px;font-weight:300;color:var(--blue);cursor:pointer;transition:background .12s}
-.zb:first-child{border-bottom:.5px solid var(--brd)}
-.zb:hover{background:rgba(0,122,255,.08)}
-.zb:active{background:rgba(0,122,255,.15)}
-#cbtn{width:40px;height:40px;background:var(--s2);
-  backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-  cursor:pointer;font-size:18px;box-shadow:var(--ss);transition:box-shadow .12s}
+.vp{background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--rsm);padding:5px 9px;font-size:10px;font-weight:600;color:var(--g1);cursor:pointer;text-align:center;box-shadow:var(--ss);transition:all .12s;min-width:40px}
+.vp:hover{color:var(--blue)}.vp.on{background:var(--blue);color:white;border-color:var(--blue);box-shadow:0 3px 10px rgba(0,122,255,.28)}
+#zwrap{display:flex;flex-direction:column;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--rmd);overflow:hidden;box-shadow:var(--sm)}
+.zb{width:40px;height:40px;border:none;background:transparent;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:300;color:var(--blue);cursor:pointer;transition:background .12s}
+.zb:first-child{border-bottom:.5px solid var(--brd)}.zb:hover{background:rgba(0,122,255,.08)}.zb:active{background:rgba(0,122,255,.15)}
+#cbtn{width:40px;height:40px;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:18px;box-shadow:var(--ss);transition:box-shadow .12s}
 #cbtn:hover{box-shadow:var(--sm)}
-
-/* scale */
-#scalebar{position:fixed;right:62px;bottom:82px;z-index:400;
-  display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+#scalebar{position:fixed;right:62px;bottom:82px;z-index:400;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
 #scaleline{height:5px;border:1.5px solid var(--t3);border-top:none;min-width:40px}
 #scalelbl{font-size:9px;color:var(--t3);font-variant-numeric:tabular-nums}
-
-/* ── PLACE PANEL ── */
-#pp{
-  position:fixed;bottom:0;left:var(--sb);right:0;z-index:450;
-  background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border-top:.5px solid var(--brd);border-radius:var(--rxl) var(--rxl) 0 0;
-  padding:0 20px calc(24px + var(--safe-b));max-height:55vh;overflow-y:auto;
-  transform:translateY(100%);
-  transition:left .26s var(--ease),transform .36s cubic-bezier(.32,.72,0,1);
-  scrollbar-width:thin;scrollbar-color:var(--g3) transparent;
-}
+/* PLACE PANEL */
+#pp{position:fixed;bottom:0;left:var(--sb);right:0;z-index:450;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-top:.5px solid var(--brd);border-radius:var(--rxl) var(--rxl) 0 0;padding:0 20px calc(24px + var(--safe-b));max-height:55vh;overflow-y:auto;transform:translateY(100%);transition:left .26s var(--ease),transform .36s cubic-bezier(.32,.72,0,1);scrollbar-width:thin}
 #pp.open{transform:translateY(0)}
 .ppdrag{width:32px;height:4px;background:var(--g3);border-radius:2px;margin:10px auto 14px}
 .pptop{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:2px}
-.ppx{width:26px;height:26px;border-radius:50%;background:var(--g4);border:none;
-  display:flex;align-items:center;justify-content:center;cursor:pointer;
-  font-size:11px;color:var(--g1);flex-shrink:0;margin-top:2px;transition:background .12s}
+.ppx{width:26px;height:26px;border-radius:50%;background:var(--g4);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:var(--g1);flex-shrink:0;margin-top:2px;transition:background .12s}
 .ppx:hover{background:var(--g3)}
 .ppnm{font-size:20px;font-weight:700;letter-spacing:-.4px;color:var(--t1);flex:1}
 .ppcat{font-size:12px;color:var(--blue);font-weight:500;margin-bottom:12px;display:flex;align-items:center;gap:4px}
 .ppacts{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.ppa{display:flex;flex-direction:column;align-items:center;gap:3px;
-  background:var(--g4);border:none;border-radius:var(--rsm);
-  padding:9px 13px;cursor:pointer;min-width:62px;
-  transition:background .12s,transform .1s}
-.ppa:hover{background:var(--g3)}
-.ppa:active{transform:scale(.95)}
+.ppa{display:flex;flex-direction:column;align-items:center;gap:3px;background:var(--g4);border:none;border-radius:var(--rsm);padding:9px 13px;cursor:pointer;min-width:62px;transition:background .12s,transform .1s}
+.ppa:hover{background:var(--g3)}.ppa:active{transform:scale(.95)}
 .ppa.bl{background:var(--blue)}.ppa.bl:hover{background:var(--blue-d)}
-.pai{font-size:16px}.pal{font-size:10.5px;font-weight:600;color:var(--t2)}
-.ppa.bl .pal{color:white}
+.pai{font-size:16px}.pal{font-size:10.5px;font-weight:600;color:var(--t2)}.ppa.bl .pal{color:white}
 .ppcards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .ppcard{background:var(--g4);border-radius:var(--rsm);padding:11px}
 .ppcl{font-size:10px;color:var(--t3);margin-bottom:2px;text-transform:uppercase;letter-spacing:.3px}
 .ppcv{font-size:13px;font-weight:600;color:var(--t1)}
-
-/* ── ROUTE PANEL ── */
-#rtp{
-  position:fixed;top:68px;left:var(--sb);z-index:450;width:300px;
-  background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:var(--rlg);padding:14px;
-  display:none;flex-direction:column;gap:8px;box-shadow:var(--sl);
-  transition:left .26s var(--ease);max-height:calc(100vh - 90px);overflow-y:auto;
-}
+/* ROUTE PANEL */
+#rtp{position:fixed;top:68px;left:var(--sb);z-index:450;width:304px;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--rlg);padding:14px;display:none;flex-direction:column;gap:8px;box-shadow:var(--sl);transition:left .26s var(--ease);max-height:calc(100vh - 90px);overflow-y:auto}
 #rtp.open{display:flex;animation:fd .16s var(--ease)}
 .rth{display:flex;align-items:center;gap:6px;margin-bottom:2px}
 .rth h3{font-size:14px;font-weight:700;color:var(--t1);flex:1}
-.rtx{width:24px;height:24px;border-radius:50%;background:var(--g4);border:none;
-  display:flex;align-items:center;justify-content:center;cursor:pointer;
-  font-size:11px;color:var(--g1);transition:background .12s}
+.rtx{width:24px;height:24px;border-radius:50%;background:var(--g4);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:11px;color:var(--g1);transition:background .12s}
 .rtx:hover{background:var(--g3)}
-.rtf{display:flex;align-items:center;gap:8px;background:var(--g4);border-radius:var(--rsm);
-  padding:9px 11px;border:1px solid transparent;transition:all .14s}
+.rtf{display:flex;align-items:center;gap:8px;background:var(--g4);border-radius:var(--rsm);padding:9px 11px;border:1px solid transparent;transition:all .14s}
 .rtf:focus-within{background:white;border-color:rgba(0,122,255,.35);box-shadow:0 0 0 3px rgba(0,122,255,.1)}
 .rtd{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .rtf input{flex:1;background:none;border:none;outline:none;font-family:var(--font);font-size:13px;color:var(--t1)}
 .rtf input::placeholder{color:var(--g1)}
-.rtswap{align-self:flex-end;background:var(--g4);border:none;border-radius:50%;
-  width:26px;height:26px;display:flex;align-items:center;justify-content:center;
-  cursor:pointer;font-size:13px;transition:background .12s;color:var(--blue)}
+.rtswap{background:var(--g4);border:none;border-radius:50%;width:26px;height:26px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;transition:background .12s;color:var(--blue);align-self:flex-end}
 .rtswap:hover{background:var(--g3)}
 .rtmds{display:flex;gap:4px}
-.rtmd{flex:1;padding:7px 2px;border-radius:var(--rsm);background:var(--g4);border:1.5px solid transparent;
-  display:flex;flex-direction:column;align-items:center;gap:2px;
-  cursor:pointer;transition:all .12s;font-size:10px;font-weight:500;color:var(--t2)}
-.rtmd:hover{background:var(--g3)}
-.rtmd.sel{background:rgba(0,122,255,.1);border-color:rgba(0,122,255,.28);color:var(--blue)}
+.rtmd{flex:1;padding:7px 2px;border-radius:var(--rsm);background:var(--g4);border:1.5px solid transparent;display:flex;flex-direction:column;align-items:center;gap:2px;cursor:pointer;transition:all .12s;font-size:10px;font-weight:500;color:var(--t2)}
+.rtmd:hover{background:var(--g3)}.rtmd.sel{background:rgba(0,122,255,.1);border-color:rgba(0,122,255,.28);color:var(--blue)}
 .rtmi{font-size:16px}
-.rtgo{background:var(--blue);color:white;border:none;border-radius:var(--rsm);
-  padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);
-  transition:background .14s,transform .1s;box-shadow:0 3px 10px rgba(0,122,255,.28)}
-.rtgo:hover{background:var(--blue-d)}
-.rtgo:active{transform:scale(.98)}
+.rtgo{background:var(--blue);color:white;border:none;border-radius:var(--rsm);padding:11px;font-size:13px;font-weight:600;cursor:pointer;font-family:var(--font);transition:background .14s,transform .1s;box-shadow:0 3px 10px rgba(0,122,255,.28)}
+.rtgo:hover{background:var(--blue-d)}.rtgo:active{transform:scale(.98)}
 #rtres{background:var(--g4);border-radius:var(--rsm);padding:10px;display:none;gap:7px;flex-direction:column}
 #rtres.show{display:flex}
 .rtrw{display:flex;align-items:center;gap:6px}
 .rtrv{font-size:14px;font-weight:700;color:var(--t1)}
 .rtrl{font-size:11px;color:var(--t3)}
-/* turn by turn steps */
-#rtsteps{max-height:180px;overflow-y:auto;display:none;flex-direction:column;gap:3px;
-  scrollbar-width:thin;scrollbar-color:var(--g3) transparent}
+#rtsteps{max-height:180px;overflow-y:auto;display:none;flex-direction:column;gap:3px;scrollbar-width:thin}
 #rtsteps.show{display:flex}
-.rtstep{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:white;
-  border-radius:var(--rsm);font-size:12px;color:var(--t2)}
+.rtstep{display:flex;align-items:flex-start;gap:8px;padding:6px 8px;background:white;border-radius:var(--rsm);font-size:11.5px;color:var(--t2)}
 .rtstep .sti{font-size:14px;flex-shrink:0;margin-top:1px}
-
-/* lang picker */
+/* LANG */
 #langbtn{position:relative}
-#langdrop{
-  position:absolute;top:48px;right:0;
-  background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:var(--rlg);padding:7px;
-  display:none;flex-direction:column;gap:2px;width:170px;box-shadow:var(--sl);z-index:600;
-}
+#langdrop{position:absolute;top:48px;right:0;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--rlg);padding:7px;display:none;flex-direction:column;gap:2px;width:170px;box-shadow:var(--sl);z-index:600}
 #langdrop.open{display:flex;animation:fd .14s var(--ease)}
-.langopt{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--rsm);
-  cursor:pointer;border:1.5px solid transparent;transition:all .12s;font-size:13px;font-weight:500;color:var(--t2)}
-.langopt:hover{background:rgba(0,0,0,.04)}
-.langopt.sel{background:rgba(0,122,255,.09);border-color:rgba(0,122,255,.22);color:var(--blue)}
-
-/* ── BOTTOM CHIPS ── */
-#bbar{
-  position:fixed;bottom:0;left:var(--sb);right:0;z-index:400;
-  padding:0 10px calc(12px + var(--safe-b)) 10px;
-  display:flex;gap:8px;align-items:flex-end;
-  transition:left .26s var(--ease);
-  pointer-events:none;
-}
-#chips{
-  flex:1;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:var(--rp);
-  padding:6px 10px;display:flex;gap:4px;align-items:center;
-  box-shadow:var(--sm);overflow-x:auto;scrollbar-width:none;pointer-events:all;
-}
+.langopt{display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--rsm);cursor:pointer;border:1.5px solid transparent;transition:all .12s;font-size:13px;font-weight:500;color:var(--t2)}
+.langopt:hover{background:rgba(0,0,0,.04)}.langopt.sel{background:rgba(0,122,255,.09);border-color:rgba(0,122,255,.22);color:var(--blue)}
+/* BOTTOM BAR */
+#bbar{position:fixed;bottom:0;left:var(--sb);right:0;z-index:400;padding:0 10px calc(12px + var(--safe-b)) 10px;display:flex;gap:8px;align-items:flex-end;transition:left .26s var(--ease);pointer-events:none}
+#chips{flex:1;background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--rp);padding:6px 10px;display:flex;gap:4px;align-items:center;box-shadow:var(--sm);overflow-x:auto;scrollbar-width:none;pointer-events:all}
 #chips::-webkit-scrollbar{display:none}
-.chip{display:flex;align-items:center;gap:4px;padding:5px 11px;border-radius:var(--rp);
-  background:var(--g4);border:.5px solid var(--brd);cursor:pointer;white-space:nowrap;
-  flex-shrink:0;font-size:12px;font-weight:500;color:var(--t2);transition:all .12s}
-.chip:hover{background:rgba(0,122,255,.09);color:var(--blue);border-color:rgba(0,122,255,.18)}
-.chip:active{transform:scale(.93)}
+.chip{display:flex;align-items:center;gap:4px;padding:5px 11px;border-radius:var(--rp);background:var(--g4);border:.5px solid var(--brd);cursor:pointer;white-space:nowrap;flex-shrink:0;font-size:12px;font-weight:500;color:var(--t2);transition:all .12s}
+.chip:hover{background:rgba(0,122,255,.09);color:var(--blue);border-color:rgba(0,122,255,.18)}.chip:active{transform:scale(.93)}
 .chico{font-size:13px}
-#cpill{background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-  border:.5px solid var(--brd);border-radius:var(--rmd);
-  padding:7px 11px;font-size:10.5px;color:var(--t3);
-  font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:var(--ss);flex-shrink:0;pointer-events:all}
+#cpill{background:var(--s2);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border:.5px solid var(--brd);border-radius:var(--rmd);padding:7px 11px;font-size:10.5px;color:var(--t3);font-variant-numeric:tabular-nums;white-space:nowrap;box-shadow:var(--ss);flex-shrink:0;pointer-events:all}
 #cpill span{color:var(--t2);font-weight:500}
-
-/* ── TOAST ── */
-#toast{
-  position:fixed;bottom:calc(90px + var(--safe-b));left:50%;
-  transform:translateX(-50%) translateY(12px);z-index:999;
-  background:rgba(44,44,48,.94);color:white;
-  font-size:13px;font-weight:500;padding:9px 16px;border-radius:var(--rp);
-  opacity:0;pointer-events:none;white-space:nowrap;
-  transition:opacity .2s,transform .2s var(--ease);
-  backdrop-filter:blur(18px);box-shadow:var(--sm);
-}
+/* TOAST */
+#toast{position:fixed;bottom:calc(88px + var(--safe-b));left:50%;transform:translateX(-50%) translateY(12px);z-index:999;background:rgba(44,44,48,.94);color:white;font-size:13px;font-weight:500;padding:9px 16px;border-radius:var(--rp);opacity:0;pointer-events:none;white-space:nowrap;transition:opacity .2s,transform .2s var(--ease);backdrop-filter:blur(18px);box-shadow:var(--sm)}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* user dot */
-.udot{width:14px;height:14px;background:#007aff;border-radius:50%;border:2.5px solid white;
-  box-shadow:0 2px 7px rgba(0,122,255,.46);animation:udA 2s ease infinite}
-.uring{position:absolute;top:50%;left:50%;border-radius:50%;
-  border:1.5px solid rgba(0,122,255,.28);transform:translate(-50%,-50%);
-  animation:urA 2s ease infinite}
+/* USER DOT */
+.udot{width:14px;height:14px;background:#007aff;border-radius:50%;border:2.5px solid white;box-shadow:0 2px 7px rgba(0,122,255,.46);animation:udA 2s ease infinite}
+.uring{position:absolute;top:50%;left:50%;border-radius:50%;border:1.5px solid rgba(0,122,255,.28);transform:translate(-50%,-50%);animation:urA 2s ease infinite}
 @keyframes udA{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
 @keyframes urA{0%{width:13px;height:13px;opacity:.7}100%{width:46px;height:46px;opacity:0}}
-
-/* route line colours */
-.route-drive{color:#007aff}
-.route-walk{color:#34c759}
-.route-cycle{color:#ff9500}
-.route-transit{color:#9b59b6}
-
-/* ══════════════════════
-   MOBILE LAYOUT (< 640px)
-   Key changes:
-   - Sidebar HIDDEN → bottom nav bar
-   - Topbar spans full width
-   - Place panel goes full width
-   - Route panel goes full width
-   - Right tools repositioned
-   - No sidebar offset anywhere
-   - Everything centered properly
-══════════════════════ */
-@media (max-width:639px){
+/* ROUTE AUTOCOMPLETE DROPDOWN */
+.rt-acdrop{position:absolute;top:100%;left:0;right:0;background:var(--s2);border:.5px solid var(--brd);border-radius:var(--rmd);box-shadow:var(--sl);z-index:999;max-height:180px;overflow-y:auto;display:none}
+.rt-acrow{padding:9px 13px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;color:var(--t1);border-bottom:.5px solid var(--brd2);transition:background .1s}
+.rt-acrow:last-child{border-bottom:none}.rt-acrow:hover{background:rgba(0,122,255,.07)}
+/* MOBILE */
+@media(max-width:639px){
   :root{--sb:0px}
-
   #sidebar{display:none}
-
-  #topbar{
-    left:0!important;right:0;top:0;
-    padding:8px 10px;
-    padding-left:calc(10px + var(--safe-l));
-    background:var(--s1);
-    backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-    border-bottom:.5px solid var(--brd);
-    box-shadow:var(--ss);
-  }
-
-  /* hide lang + layers btn on mobile (in bottom nav) */
-  #topbar .tbb:not(#loc-btn):not(#dir-btn){display:none}
-
-  #pp{left:0!important;border-radius:var(--rxl) var(--rxl) 0 0}
-
-  #rtp{
-    left:0!important;right:0;width:auto;
-    top:auto;bottom:calc(var(--botbar) + var(--safe-b));
-    border-radius:var(--rxl) var(--rxl) 0 0;
-    border-bottom:none;
-    max-height:60vh;
-  }
-
+  #topbar{left:0!important;right:0;background:var(--s1);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-bottom:.5px solid var(--brd);box-shadow:var(--ss)}
+  #pp{left:0!important}
+  #rtp{left:0!important;right:0;width:auto;top:auto;bottom:calc(72px + var(--safe-b));border-radius:var(--rxl) var(--rxl) 0 0;border-bottom:none;max-height:60vh}
   #lpick{top:56px;right:8px;left:8px;width:auto}
-
-  #langdrop{left:0;right:auto;width:180px}
-
-  /* right tools: shift left so they don't overlap */
   #mtools{right:8px}
-  #scalebar{right:58px;bottom:calc(var(--botbar) + 10px + var(--safe-b))}
-
-  /* bottom bar: chips only, full width */
-  #bbar{
-    left:0!important;right:0;bottom:calc(var(--botbar) + var(--safe-b));
-    padding:0 8px 6px;
-  }
+  #scalebar{right:58px;bottom:calc(80px + var(--safe-b))}
+  #bbar{left:0!important;right:0;bottom:calc(72px + var(--safe-b));padding:0 8px 6px}
   #cpill{display:none}
-
-  /* ── MOBILE BOTTOM NAV ── */
-  #mobnav{
-    display:flex;
-    position:fixed;bottom:0;left:0;right:0;
-    height:calc(var(--botbar) + var(--safe-b));
-    z-index:500;
-    background:var(--s1);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);
-    border-top:.5px solid var(--brd);
-    padding-bottom:var(--safe-b);
-    align-items:center;justify-content:space-around;
-  }
-  .mni{
-    display:flex;flex-direction:column;align-items:center;justify-content:center;
-    gap:3px;padding:6px 12px;border-radius:var(--rsm);cursor:pointer;
-    border:none;background:transparent;transition:background .12s;
-    min-width:52px;flex:1;
-  }
+  #mobnav{display:flex;position:fixed;bottom:0;left:0;right:0;height:calc(72px + var(--safe-b));z-index:500;background:var(--s1);backdrop-filter:var(--blur);-webkit-backdrop-filter:var(--blur);border-top:.5px solid var(--brd);padding-bottom:var(--safe-b);align-items:center;justify-content:space-around}
+  .mni{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 8px;border-radius:var(--rsm);cursor:pointer;border:none;background:transparent;transition:background .12s;min-width:48px;flex:1}
   .mni:active{background:rgba(0,122,255,.09)}
-  .mni.on .mni-ico{color:var(--blue)}
-  .mni.on .mni-lbl{color:var(--blue)}
+  .mni.on .mni-ico,.mni.on .mni-lbl{color:var(--blue)}
   .mni-ico{font-size:21px;color:var(--g1)}
   .mni-lbl{font-size:10px;font-weight:500;color:var(--g1)}
 }
-@media (min-width:640px){
-  #mobnav{display:none}
-}
-
+@media(min-width:640px){#mobnav{display:none}}
 ::-webkit-scrollbar{width:4px}
 ::-webkit-scrollbar-thumb{background:var(--g3);border-radius:2px}
 </style>
 </head>
 <body>
-
-<!-- SPLASH -->
 <div id="splash">
   <div class="sp-ico">🗺️</div>
   <div style="display:flex;flex-direction:column;align-items:center;gap:3px">
     <div class="sp-nm">G Map</div>
-    <div class="sp-sub" id="sp-sub">Explore the World</div>
+    <div class="sp-sub">Explore the World</div>
   </div>
   <div class="sp-bar"><div class="sp-fill"></div></div>
 </div>
-
-<!-- MAP -->
 <div id="map" class="m-standard"></div>
-
-<!-- DESKTOP SIDEBAR -->
 <div id="sidebar">
-  <div class="sbrand" onclick="toggleSB()">
-    <div class="sbico">🗺️</div><div class="sbnm" id="brand-nm">G Map</div>
-  </div>
-  <div class="nav on" onclick="setNav(this,'map')">    <span class="ni">🗺️</span><span class="nl" data-i18n="nav_map">Map</span></div>
-  <div class="nav"    onclick="setNav(this,'explore')"><span class="ni">🔭</span><span class="nl" data-i18n="nav_explore">Explore</span></div>
-  <div class="nav"    onclick="openRt()">              <span class="ni">🧭</span><span class="nl" data-i18n="nav_dir">Directions</span></div>
-  <div class="nav"    onclick="setNav(this,'saved')">  <span class="ni">❤️</span><span class="nl" data-i18n="nav_saved">Saved</span><span class="nbadge"></span></div>
+  <div class="sbrand" onclick="toggleSB()"><div class="sbico">🗺️</div><div class="sbnm">G Map</div></div>
+  <div class="nav on" onclick="setNav(this,'map')"><span class="ni">🗺️</span><span class="nl">Map</span></div>
+  <div class="nav" onclick="setNav(this,'explore')"><span class="ni">🔭</span><span class="nl">Explore</span></div>
+  <div class="nav" onclick="openRt()"><span class="ni">🧭</span><span class="nl">Directions</span></div>
+  <div class="nav" onclick="setNav(this,'saved')"><span class="ni">❤️</span><span class="nl">Saved</span><span class="nbadge"></span></div>
   <div class="nsep"></div>
-  <div class="nav" onclick="locateMe()">  <span class="ni">📍</span><span class="nl" data-i18n="nav_loc">My Location</span></div>
-  <div class="nav" onclick="toggleLP()"> <span class="ni">🗂️</span><span class="nl" data-i18n="nav_style">Map Style</span></div>
-  <div class="nav" onclick="togTraffic()"><span class="ni">🚦</span><span class="nl" data-i18n="nav_traffic">Traffic</span></div>
-  <div class="nav" onclick="togWeather()"><span class="ni">🌤️</span><span class="nl" data-i18n="nav_weather">Weather</span></div>
+  <div class="nav" onclick="locateMe()"><span class="ni">📍</span><span class="nl">My Location</span></div>
+  <div class="nav" onclick="toggleLP()"><span class="ni">🗂️</span><span class="nl">Map Style</span></div>
+  <div class="nav" onclick="togTraffic()"><span class="ni">🚦</span><span class="nl">Traffic</span></div>
+  <div class="nav" onclick="togWeather()"><span class="ni">🌤️</span><span class="nl">Weather</span></div>
   <div class="nsep"></div>
-  <div class="nav" onclick="openLang()"><span class="ni">🌐</span><span class="nl" data-i18n="nav_lang">Language</span></div>
-  <div id="sbtog" onclick="toggleSB()"><span class="ti">›</span><span class="tl" data-i18n="collapse">Collapse</span></div>
+  <div class="nav" onclick="openLang()"><span class="ni">🌐</span><span class="nl">Language</span></div>
+  <div id="sbtog" onclick="toggleSB()"><span class="ti">›</span><span class="tl">Collapse</span></div>
 </div>
-
-<!-- TOP SEARCH BAR -->
 <div id="topbar">
   <div id="swrap">
     <span id="sico">🔍</span>
-    <input id="sinp" type="text" autocomplete="off" spellcheck="false"
-      oninput="onSI(this.value)"
-      onfocus="openDrop()"
-      onblur="setTimeout(closeDrop,160)"
-      onkeydown="onSK(event)">
+    <input id="sinp" type="text" placeholder="Search G Map…" autocomplete="off" spellcheck="false"
+      oninput="onSI(this.value)" onfocus="openDrop()" onblur="setTimeout(closeDrop,160)" onkeydown="onSK(event)">
     <button id="sclr" onclick="clearS()">✕</button>
     <div id="sdrop"></div>
   </div>
-  <div id="langbtn" style="position:relative">
-    <button class="tbb" onclick="toggleLang()" title="Language">🌐</button>
-    <div id="langdrop"></div>
-  </div>
-  <button id="loc-btn"  class="tbb" onclick="locateMe()"  title="Location">📍</button>
-  <button id="dir-btn"  class="tbb" onclick="openRt()"    title="Directions">🧭</button>
+  <div id="langbtn"><button class="tbb" onclick="toggleLang()">🌐</button><div id="langdrop"></div></div>
+  <button class="tbb" onclick="locateMe()">📍</button>
+  <button class="tbb" onclick="openRt()">🧭</button>
 </div>
-
-<!-- LAYER PICKER -->
 <div id="lpick">
-  <h4 data-i18n="map_style">Map Style</h4>
-  <div class="lpr sel" onclick="setLayer('standard',this)"> <span class="li">🗺️</span><span class="ln" data-i18n="l_standard">Standard</span></div>
-  <div class="lpr"     onclick="setLayer('satellite',this)"><span class="li">🛰️</span><span class="ln" data-i18n="l_satellite">Satellite</span></div>
-  <div class="lpr"     onclick="setLayer('terrain',this)">  <span class="li">⛰️</span><span class="ln" data-i18n="l_terrain">Terrain</span></div>
-  <div class="lpr"     onclick="setLayer('cycle',this)">    <span class="li">🚴</span><span class="ln" data-i18n="l_cycle">Cycling</span></div>
-  <div class="lpr"     onclick="setLayer('transit',this)">  <span class="li">🚌</span><span class="ln" data-i18n="l_transit">Transit</span></div>
+  <h4>Map Style</h4>
+  <div class="lpr sel" onclick="setLayer('standard',this)"><span class="li">🗺️</span><span class="ln">Standard</span></div>
+  <div class="lpr" onclick="setLayer('satellite',this)"><span class="li">🛰️</span><span class="ln">Satellite</span></div>
+  <div class="lpr" onclick="setLayer('terrain',this)"><span class="li">⛰️</span><span class="ln">Terrain</span></div>
+  <div class="lpr" onclick="setLayer('cycle',this)"><span class="li">🚴</span><span class="ln">Cycling</span></div>
+  <div class="lpr" onclick="setLayer('transit',this)"><span class="li">🚌</span><span class="ln">Transit</span></div>
 </div>
-
-<!-- RIGHT MAP TOOLS -->
 <div id="mtools">
   <div id="vpills">
-    <div class="vp" id="vp3d"  onclick="tog3D()"      data-i18n="btn_3d">3D</div>
-    <div class="vp" id="vptrf" onclick="togTraffic()"  data-i18n="btn_trf">Traffic</div>
+    <div class="vp" id="vp3d" onclick="tog3D()">3D</div>
+    <div class="vp" id="vptrf" onclick="togTraffic()">Traffic</div>
   </div>
   <div id="zwrap">
     <button class="zb" onclick="GM.zoomIn()">+</button>
     <button class="zb" onclick="GM.zoomOut()">−</button>
   </div>
-  <div id="cbtn" onclick="locateMe()" title="My Location">📍</div>
+  <div id="cbtn" onclick="locateMe()">📍</div>
 </div>
-
-<!-- SCALE BAR -->
 <div id="scalebar"><div id="scaleline"></div><div id="scalelbl"></div></div>
-
-<!-- PLACE PANEL (bottom sheet) -->
 <div id="pp">
   <div class="ppdrag"></div>
-  <div class="pptop">
-    <div class="ppnm" id="ppnm">—</div>
-    <button class="ppx" onclick="closePP()">✕</button>
-  </div>
+  <div class="pptop"><div class="ppnm" id="ppnm">—</div><button class="ppx" onclick="closePP()">✕</button></div>
   <div class="ppcat" id="ppcat">📍 Location</div>
   <div class="ppacts">
-    <button class="ppa bl" onclick="dirTo()">  <span class="pai">🧭</span><span class="pal" style="color:white" data-i18n="pp_dir">Directions</span></button>
-    <button class="ppa"    onclick="saveP()">  <span class="pai">❤️</span><span class="pal" data-i18n="pp_save">Save</span></button>
-    <button class="ppa"    onclick="shareP()"> <span class="pai">🔗</span><span class="pal" data-i18n="pp_share">Share</span></button>
-    <button class="ppa"    onclick="streetV()"><span class="pai">👁️</span><span class="pal" data-i18n="pp_sv">Street View</span></button>
+    <button class="ppa bl" onclick="dirTo()"><span class="pai">🧭</span><span class="pal" style="color:white">Directions</span></button>
+    <button class="ppa" onclick="saveP()"><span class="pai">❤️</span><span class="pal">Save</span></button>
+    <button class="ppa" onclick="shareP()"><span class="pai">🔗</span><span class="pal">Share</span></button>
+    <button class="ppa" onclick="streetV()"><span class="pai">👁️</span><span class="pal">Street View</span></button>
   </div>
   <div class="ppcards" id="ppcards"></div>
 </div>
-
-<!-- ROUTE PANEL -->
 <div id="rtp">
-  <div class="rth">
-    <h3>🧭 <span data-i18n="nav_dir">Directions</span></h3>
-    <button class="rtx" onclick="closeRt()">✕</button>
-  </div>
+  <div class="rth"><h3>🧭 Directions</h3><button class="rtx" onclick="closeRt()">✕</button></div>
   <div style="display:flex;gap:6px;align-items:center">
     <div style="flex:1;display:flex;flex-direction:column;gap:5px">
-      <div class="rtf"><div class="rtd" style="background:#007aff"></div>
-        <input id="finp" placeholder="From…" oninput="onFromInput(this.value)">
-        <div id="from-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--s2);border:.5px solid var(--brd);border-radius:var(--rmd);box-shadow:var(--sl);z-index:999;max-height:180px;overflow-y:auto"></div>
+      <div class="rtf" style="position:relative">
+        <div class="rtd" style="background:#007aff"></div>
+        <input id="finp" placeholder="My Location" oninput="onFromInput(this.value)">
+        <div id="from-drop" class="rt-acdrop"></div>
       </div>
-      <div class="rtf" style="position:relative"><div class="rtd" style="background:#ff3b30"></div>
-        <input id="tinp" placeholder="To…" oninput="onToInput(this.value)" onkeydown="if(event.key==='Enter')calcRoute()">
-        <div id="to-drop" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--s2);border:.5px solid var(--brd);border-radius:var(--rmd);box-shadow:var(--sl);z-index:999;max-height:180px;overflow-y:auto"></div>
+      <div class="rtf" style="position:relative">
+        <div class="rtd" style="background:#ff3b30"></div>
+        <input id="tinp" placeholder="Destination…" oninput="onToInput(this.value)" onkeydown="if(event.key==='Enter')calcRoute()">
+        <div id="to-drop" class="rt-acdrop"></div>
       </div>
     </div>
-    <button class="rtswap" onclick="swapRoute()" title="Swap">⇅</button>
+    <button class="rtswap" onclick="swapRoute()">⇅</button>
   </div>
   <div class="rtmds">
-    <div class="rtmd sel" onclick="setDM(this,'drive')">  <span class="rtmi">🚗</span><span data-i18n="md_drive">Drive</span></div>
-    <div class="rtmd"     onclick="setDM(this,'transit')"><span class="rtmi">🚌</span><span data-i18n="md_transit">Transit</span></div>
-    <div class="rtmd"     onclick="setDM(this,'walk')">   <span class="rtmi">🚶</span><span data-i18n="md_walk">Walk</span></div>
-    <div class="rtmd"     onclick="setDM(this,'cycle')">  <span class="rtmi">🚴</span><span data-i18n="md_cycle">Cycle</span></div>
+    <div class="rtmd sel" onclick="setDM(this,'drive')"><span class="rtmi">🚗</span>Drive</div>
+    <div class="rtmd" onclick="setDM(this,'transit')"><span class="rtmi">🚌</span>Transit</div>
+    <div class="rtmd" onclick="setDM(this,'walk')"><span class="rtmi">🚶</span>Walk</div>
+    <div class="rtmd" onclick="setDM(this,'cycle')"><span class="rtmi">🚴</span>Cycle</div>
   </div>
-  <button class="rtgo" onclick="calcRoute()" data-i18n="go">Get Directions</button>
+  <button class="rtgo" onclick="calcRoute()">Get Directions</button>
   <div id="rtres">
-    <div class="rtrw"><span style="font-size:14px">⏱️</span><span class="rtrv" id="rttime">—</span><span class="rtrl" data-i18n="est_time"> est. time</span></div>
-    <div class="rtrw"><span style="font-size:14px">📏</span><span class="rtrv" id="rtdist">—</span><span class="rtrl" data-i18n="distance"> distance</span></div>
-    <div class="rtrw"><span style="font-size:14px">🛣️</span><span class="rtrv" id="rtroad">—</span><span class="rtrl" data-i18n="via"> via</span></div>
+    <div class="rtrw"><span style="font-size:14px">⏱️</span><span class="rtrv" id="rttime">—</span><span class="rtrl"> est. time</span></div>
+    <div class="rtrw"><span style="font-size:14px">📏</span><span class="rtrv" id="rtdist">—</span><span class="rtrl"> distance</span></div>
+    <div class="rtrw"><span style="font-size:14px">🛣️</span><span class="rtrv" id="rtroad">—</span><span class="rtrl"> via</span></div>
   </div>
   <div id="rtsteps"></div>
 </div>
-
-<!-- BOTTOM CHIPS -->
 <div id="bbar">
   <div id="chips">
-    <div class="chip" onclick="nearby('restaurant')"><span class="chico">🍽️</span><span data-i18n="ch_food">Food</span></div>
-    <div class="chip" onclick="nearby('hotel')">     <span class="chico">🏨</span><span data-i18n="ch_hotel">Hotels</span></div>
-    <div class="chip" onclick="nearby('fuel')">      <span class="chico">⛽</span><span data-i18n="ch_fuel">Petrol</span></div>
-    <div class="chip" onclick="nearby('hospital')">  <span class="chico">🏥</span><span data-i18n="ch_hosp">Hospital</span></div>
-    <div class="chip" onclick="nearby('atm')">       <span class="chico">🏧</span>ATM</div>
-    <div class="chip" onclick="nearby('pharmacy')">  <span class="chico">💊</span><span data-i18n="ch_pharm">Pharmacy</span></div>
-    <div class="chip" onclick="nearby('school')">    <span class="chico">🏫</span><span data-i18n="ch_school">Schools</span></div>
-    <div class="chip" onclick="nearby('park')">      <span class="chico">🌳</span><span data-i18n="ch_park">Parks</span></div>
-    <div class="chip" onclick="nearby('cafe')">      <span class="chico">☕</span><span data-i18n="ch_cafe">Cafés</span></div>
-    <div class="chip" onclick="nearby('cinema')">    <span class="chico">🎬</span><span data-i18n="ch_cinema">Cinema</span></div>
-    <div class="chip" onclick="nearby('supermarket')"><span class="chico">🛒</span><span data-i18n="ch_market">Markets</span></div>
-    <div class="chip" onclick="nearby('bank')">      <span class="chico">🏦</span><span data-i18n="ch_bank">Banks</span></div>
+    <div class="chip" onclick="nearby('restaurant')"><span class="chico">🍽️</span>Food</div>
+    <div class="chip" onclick="nearby('hotel')"><span class="chico">🏨</span>Hotels</div>
+    <div class="chip" onclick="nearby('fuel')"><span class="chico">⛽</span>Petrol</div>
+    <div class="chip" onclick="nearby('hospital')"><span class="chico">🏥</span>Hospital</div>
+    <div class="chip" onclick="nearby('atm')"><span class="chico">🏧</span>ATM</div>
+    <div class="chip" onclick="nearby('pharmacy')"><span class="chico">💊</span>Pharmacy</div>
+    <div class="chip" onclick="nearby('school')"><span class="chico">🏫</span>Schools</div>
+    <div class="chip" onclick="nearby('park')"><span class="chico">🌳</span>Parks</div>
+    <div class="chip" onclick="nearby('cafe')"><span class="chico">☕</span>Cafés</div>
+    <div class="chip" onclick="nearby('cinema')"><span class="chico">🎬</span>Cinema</div>
+    <div class="chip" onclick="nearby('supermarket')"><span class="chico">🛒</span>Markets</div>
+    <div class="chip" onclick="nearby('bank')"><span class="chico">🏦</span>Banks</div>
   </div>
   <div id="cpill">Lat <span id="clat">—</span> &nbsp;Lng <span id="clng">—</span></div>
 </div>
-
-<!-- MOBILE BOTTOM NAV -->
 <div id="mobnav">
-  <div class="mni on" onclick="mobNav(this,'map')">
-    <span class="mni-ico">🗺️</span><span class="mni-lbl" data-i18n="nav_map">Map</span>
-  </div>
-  <div class="mni" onclick="mobNav(this,'search')">
-    <span class="mni-ico">🔍</span><span class="mni-lbl" data-i18n="nav_search">Search</span>
-  </div>
-  <div class="mni" onclick="mobNav(this,'dir')">
-    <span class="mni-ico">🧭</span><span class="mni-lbl" data-i18n="nav_dir">Directions</span>
-  </div>
-  <div class="mni" onclick="mobNav(this,'saved')">
-    <span class="mni-ico">❤️</span><span class="mni-lbl" data-i18n="nav_saved">Saved</span>
-  </div>
-  <div class="mni" onclick="mobNav(this,'layers')">
-    <span class="mni-ico">🗂️</span><span class="mni-lbl" data-i18n="nav_style">Style</span>
-  </div>
+  <div class="mni on" onclick="mobNav(this,'map')"><span class="mni-ico">🗺️</span><span class="mni-lbl">Map</span></div>
+  <div class="mni" onclick="mobNav(this,'search')"><span class="mni-ico">🔍</span><span class="mni-lbl">Search</span></div>
+  <div class="mni" onclick="mobNav(this,'dir')"><span class="mni-ico">🧭</span><span class="mni-lbl">Directions</span></div>
+  <div class="mni" onclick="mobNav(this,'saved')"><span class="mni-ico">❤️</span><span class="mni-lbl">Saved</span></div>
+  <div class="mni" onclick="mobNav(this,'layers')"><span class="mni-ico">🗂️</span><span class="mni-lbl">Style</span></div>
 </div>
-
-<!-- TOAST -->
 <div id="toast"></div>
-
 <script>
 'use strict';
-/* ═══════════════════════════════════════════════════
-   G MAP v5
-   Fixes:
-   1. Real road routing via OSRM
-   2. Multi-language (8 languages)
-   3. No map boomerang — setView not flyTo on init
-   4. Full mobile layout — bottom nav, centered
-   5. CartoDB Voyager = all city/street/village/island labels
-═══════════════════════════════════════════════════ */
+var GM=null,uMark=null,uCircle=null,baseTile=null,labelTile=null;
+var poiArr=[],rLines=[],trafLG=null;
+var dmMode='drive',curPl=null,sbOpen=false;
+var trafOn=false,is3D=false,wxOn=false;
+var lat0=21.1702,lng0=72.8311,ready=false;
+var saved=[],sTimer=null,fromCoord=null,toCoord=null;
+var curLayer='standard',curLang='en';
+var fromTimer2=null,toTimer2=null;
 
-// ── State ──
-let GM = null;
-let uMark = null, uCircle = null;
-let baseTile = null, labelTile = null;
-let poiArr = [], rLines = [];
-let trafLG = null;
-let dmMode = 'drive';
-let curPl = null;
-let sbOpen = false;
-let trafOn = false, is3D = false, wxOn = false;
-let lat0 = 21.1702, lng0 = 72.8311;
-let ready = false;
-let saved = [];
-let sTimer = null, fromTimer = null, toTimer = null;
-let curLayer = 'standard';
-let curLang = 'en';
-let fromCoord = null; // [lat,lng] resolved from-location
-let toCoord   = null; // [lat,lng] resolved to-location
-
-/* ── i18n strings ── */
-const I18N = {
-  en:{ nav_map:'Map',nav_explore:'Explore',nav_dir:'Directions',nav_saved:'Saved',
-       nav_loc:'My Location',nav_style:'Map Style',nav_traffic:'Traffic',nav_weather:'Weather',
-       nav_lang:'Language',nav_search:'Search',collapse:'Collapse',
-       map_style:'Map Style',l_standard:'Standard',l_satellite:'Satellite',
-       l_terrain:'Terrain',l_cycle:'Cycling',l_transit:'Transit',
-       btn_3d:'3D',btn_trf:'Traffic',
-       pp_dir:'Directions',pp_save:'Save',pp_share:'Share',pp_sv:'Street View',
-       md_drive:'Drive',md_transit:'Transit',md_walk:'Walk',md_cycle:'Cycle',
-       go:'Get Directions',est_time:' est. time',distance:' distance',via:' via',
-       ch_food:'Food',ch_hotel:'Hotels',ch_fuel:'Petrol',ch_hosp:'Hospital',
-       ch_pharm:'Pharmacy',ch_school:'Schools',ch_park:'Parks',ch_cafe:'Cafés',
-       ch_cinema:'Cinema',ch_market:'Markets',ch_bank:'Banks',
-       search_ph:'Search G Map…',from_ph:'From…',to_ph:'To…',
-       loc_found:'📍 Location found!',loc_fail:'📍 Enable location for your position',
-       routing:'🛣️ Calculating road route…',route_ok:'✅ Route found!',
-       route_fail:'⚠️ Route not found',no_net:'🌐 Internet needed',no_dest:'⚠️ Enter destination',
-       explore:'🔭 Tap anywhere to explore!',already_saved:'💾 Already saved!',
-       saved_ok:'❤️ Saved!',link_copied:'🔗 Link copied!' },
-  hi:{ nav_map:'मानचित्र',nav_explore:'अन्वेषण',nav_dir:'दिशाएँ',nav_saved:'सहेजे',
-       nav_loc:'मेरा स्थान',nav_style:'मानचित्र शैली',nav_traffic:'यातायात',nav_weather:'मौसम',
-       nav_lang:'भाषा',nav_search:'खोज',collapse:'संक्षिप्त',
-       map_style:'मानचित्र शैली',l_standard:'सामान्य',l_satellite:'उपग्रह',
-       l_terrain:'भूभाग',l_cycle:'साइकिल',l_transit:'ट्रांज़िट',
-       btn_3d:'3D',btn_trf:'यातायात',
-       pp_dir:'दिशाएँ',pp_save:'सहेजें',pp_share:'साझा',pp_sv:'स्ट्रीट व्यू',
-       md_drive:'ड्राइव',md_transit:'ट्रांज़िट',md_walk:'पैदल',md_cycle:'साइकिल',
-       go:'दिशाएँ प्राप्त करें',est_time:' अनुमानित समय',distance:' दूरी',via:' के द्वारा',
-       ch_food:'भोजन',ch_hotel:'होटल',ch_fuel:'पेट्रोल',ch_hosp:'अस्पताल',
-       ch_pharm:'फार्मेसी',ch_school:'विद्यालय',ch_park:'पार्क',ch_cafe:'कैफे',
-       ch_cinema:'सिनेमा',ch_market:'बाज़ार',ch_bank:'बैंक',
-       search_ph:'G Map खोजें…',from_ph:'कहाँ से…',to_ph:'कहाँ तक…',
-       loc_found:'📍 स्थान मिला!',loc_fail:'📍 स्थान सक्षम करें',
-       routing:'🛣️ सड़क मार्ग गणना…',route_ok:'✅ मार्ग मिला!',
-       route_fail:'⚠️ मार्ग नहीं मिला',no_net:'🌐 इंटरनेट आवश्यक',no_dest:'⚠️ गंतव्य दर्ज करें',
-       explore:'🔭 कहीं भी टैप करें!',already_saved:'💾 पहले से सहेजा!',
-       saved_ok:'❤️ सहेजा!',link_copied:'🔗 लिंक कॉपी हुआ!' },
-  gu:{ nav_map:'નકશો',nav_dir:'દિશાઓ',nav_saved:'સાચવ્યા',nav_search:'શોધ',
-       nav_style:'નકશો શૈલી',l_standard:'સામાન્ય',l_satellite:'ઉપગ્રહ',
-       md_drive:'ડ્રાઇવ',md_walk:'ચાલો',go:'દિશાઓ મેળવો',
-       search_ph:'G Map શોધો…',from_ph:'ક્યાંથી…',to_ph:'ક્યાં સુધી…',
-       loc_found:'📍 સ્થાન મળ્યું!',route_ok:'✅ રૂટ મળ્યો!',
-       pp_dir:'દિશાઓ',pp_save:'સાચવો',pp_share:'શેર',pp_sv:'સ્ટ્રીટ વ્યૂ',
-       ch_food:'ભોજન',ch_hotel:'હોટેલ',ch_fuel:'પેટ્રોલ',ch_hosp:'હોસ્પિટલ',
-       nav_explore:'અન્વેષણ',nav_loc:'મારું સ્થાન',nav_traffic:'ટ્રાફિક',
-       nav_weather:'હવામાન',nav_lang:'ભાષા',collapse:'સંક્ષેપ',
-       map_style:'નકશો શૈલી',l_terrain:'ભૂ-આકૃતિ',l_cycle:'સાઇકલ',l_transit:'ટ્રાન્ઝિટ',
-       btn_3d:'3D',btn_trf:'ટ્રાફિક',ch_pharm:'ફાર્મસી',ch_school:'શાળા',
-       ch_park:'પાર્ક',ch_cafe:'કેફે',ch_cinema:'સિનેમા',ch_market:'બજાર',
-       ch_bank:'બેંક',est_time:' અંદાજ સમય',distance:' અંતર',via:' દ્વારા',
-       md_transit:'ટ્રાન્ઝિટ',md_cycle:'સાઇકલ',routing:'🛣️ રૂટ ગણતરી…',
-       route_fail:'⚠️ રૂટ મળ્યો નહીં',no_net:'🌐 ઇન્ટરનેટ જોઈએ',no_dest:'⚠️ ગંતવ્ય દાખલ કરો',
-       explore:'🔭 ગમે ત્યાં ટેપ કરો!',already_saved:'💾 પહેલેથી સાચવ્યો!',
-       saved_ok:'❤️ સાચવ્યો!',link_copied:'🔗 લિંક કૉપી થઈ!',loc_fail:'📍 સ્થાન સક્ષમ કરો' },
-  ar:{ nav_map:'الخريطة',nav_dir:'الاتجاهات',nav_saved:'المحفوظة',nav_search:'بحث',
-       nav_style:'نمط الخريطة',l_standard:'قياسي',l_satellite:'الأقمار الصناعية',
-       md_drive:'قيادة',md_walk:'مشي',go:'احصل على الاتجاهات',
-       search_ph:'ابحث في G Map…',from_ph:'من…',to_ph:'إلى…',
-       loc_found:'📍 تم العثور على الموقع!',route_ok:'✅ تم العثور على المسار!',
-       pp_dir:'الاتجاهات',pp_save:'حفظ',pp_share:'مشاركة',pp_sv:'عرض الشارع',
-       ch_food:'طعام',ch_hotel:'فنادق',ch_fuel:'وقود',ch_hosp:'مستشفى',
-       nav_explore:'استكشاف',nav_loc:'موقعي',nav_traffic:'حركة المرور',
-       nav_weather:'الطقس',nav_lang:'اللغة',collapse:'طي',
-       map_style:'نمط الخريطة',l_terrain:'التضاريس',l_cycle:'دراجة',l_transit:'عبور',
-       btn_3d:'3D',btn_trf:'المرور',ch_pharm:'صيدلية',ch_school:'مدارس',
-       ch_park:'حدائق',ch_cafe:'مقاهي',ch_cinema:'سينما',ch_market:'أسواق',
-       ch_bank:'بنوك',est_time:' وقت تقديري',distance:' مسافة',via:' عبر',
-       md_transit:'عبور',md_cycle:'دراجة',routing:'🛣️ حساب المسار…',
-       route_fail:'⚠️ لم يتم العثور على مسار',no_net:'🌐 الإنترنت مطلوب',
-       no_dest:'⚠️ أدخل الوجهة',explore:'🔭 انقر في أي مكان!',
-       already_saved:'💾 محفوظ بالفعل!',saved_ok:'❤️ تم الحفظ!',
-       link_copied:'🔗 تم نسخ الرابط!',loc_fail:'📍 تمكين الموقع' },
-  fr:{ nav_map:'Carte',nav_dir:'Itinéraire',nav_saved:'Enregistrés',nav_search:'Rechercher',
-       nav_style:'Style de carte',l_standard:'Standard',l_satellite:'Satellite',
-       md_drive:'Conduire',md_walk:'Marcher',go:'Obtenir l\'itinéraire',
-       search_ph:'Rechercher sur G Map…',from_ph:'De…',to_ph:'À…',
-       loc_found:'📍 Position trouvée!',route_ok:'✅ Itinéraire trouvé!',
-       pp_dir:'Itinéraire',pp_save:'Sauver',pp_share:'Partager',pp_sv:'Vue de rue',
-       ch_food:'Restauration',ch_hotel:'Hôtels',ch_fuel:'Essence',ch_hosp:'Hôpital',
-       nav_explore:'Explorer',nav_loc:'Ma position',nav_traffic:'Trafic',
-       nav_weather:'Météo',nav_lang:'Langue',collapse:'Réduire',
-       map_style:'Style de carte',l_terrain:'Terrain',l_cycle:'Cyclisme',l_transit:'Transit',
-       btn_3d:'3D',btn_trf:'Trafic',ch_pharm:'Pharmacie',ch_school:'Écoles',
-       ch_park:'Parcs',ch_cafe:'Cafés',ch_cinema:'Cinéma',ch_market:'Marchés',
-       ch_bank:'Banques',est_time:' temps estimé',distance:' distance',via:' via',
-       md_transit:'Transit',md_cycle:'Vélo',routing:'🛣️ Calcul d\'itinéraire…',
-       route_fail:'⚠️ Itinéraire introuvable',no_net:'🌐 Internet requis',
-       no_dest:'⚠️ Entrez la destination',explore:'🔭 Appuyez n\'importe où!',
-       already_saved:'💾 Déjà enregistré!',saved_ok:'❤️ Enregistré!',
-       link_copied:'🔗 Lien copié!',loc_fail:'📍 Activer la localisation' },
-  es:{ nav_map:'Mapa',nav_dir:'Rutas',nav_saved:'Guardados',nav_search:'Buscar',
-       nav_style:'Estilo de mapa', l_standard:'Estándar',l_satellite:'Satélite',
-       md_drive:'Conducir',md_walk:'Caminar',go:'Obtener rutas',
-       search_ph:'Buscar en G Map…',from_ph:'Desde…',to_ph:'Hasta…',
-       loc_found:'📍 Ubicación encontrada!',route_ok:'✅ Ruta encontrada!',
-       pp_dir:'Rutas',pp_save:'Guardar',pp_share:'Compartir',pp_sv:'Street View',
-       ch_food:'Comida',ch_hotel:'Hoteles',ch_fuel:'Gasolina',ch_hosp:'Hospital',
-       nav_explore:'Explorar',nav_loc:'Mi ubicación',nav_traffic:'Tráfico',
-       nav_weather:'Clima',nav_lang:'Idioma',collapse:'Colapsar',
-       map_style:'Estilo de mapa',l_terrain:'Terreno',l_cycle:'Ciclismo',l_transit:'Tránsito',
-       btn_3d:'3D',btn_trf:'Tráfico',ch_pharm:'Farmacia',ch_school:'Escuelas',
-       ch_park:'Parques',ch_cafe:'Cafés',ch_cinema:'Cine',ch_market:'Mercados',
-       ch_bank:'Bancos',est_time:' tiempo estimado',distance:' distancia',via:' vía',
-       md_transit:'Tránsito',md_cycle:'Bici',routing:'🛣️ Calculando ruta…',
-       route_fail:'⚠️ Ruta no encontrada',no_net:'🌐 Internet requerido',
-       no_dest:'⚠️ Ingrese destino',explore:'🔭 Toque en cualquier lugar!',
-       already_saved:'💾 ¡Ya guardado!',saved_ok:'❤️ ¡Guardado!',
-       link_copied:'🔗 ¡Enlace copiado!',loc_fail:'📍 Activar ubicación' },
-  zh:{ nav_map:'地图',nav_dir:'路线',nav_saved:'已保存',nav_search:'搜索',
-       nav_style:'地图样式',l_standard:'标准',l_satellite:'卫星',
-       md_drive:'驾车',md_walk:'步行',go:'获取路线',
-       search_ph:'搜索 G Map…',from_ph:'出发地…',to_ph:'目的地…',
-       loc_found:'📍 已找到位置！',route_ok:'✅ 已找到路线！',
-       pp_dir:'路线',pp_save:'保存',pp_share:'分享',pp_sv:'街景',
-       ch_food:'餐饮',ch_hotel:'酒店',ch_fuel:'加油站',ch_hosp:'医院',
-       nav_explore:'探索',nav_loc:'我的位置',nav_traffic:'交通',
-       nav_weather:'天气',nav_lang:'语言',collapse:'收起',
-       map_style:'地图样式',l_terrain:'地形',l_cycle:'骑行',l_transit:'公交',
-       btn_3d:'3D',btn_trf:'交通',ch_pharm:'药房',ch_school:'学校',
-       ch_park:'公园',ch_cafe:'咖啡馆',ch_cinema:'电影院',ch_market:'超市',
-       ch_bank:'银行',est_time:' 预计时间',distance:' 距离',via:' 经由',
-       md_transit:'公交',md_cycle:'骑行',routing:'🛣️ 计算路线中…',
-       route_fail:'⚠️ 未找到路线',no_net:'🌐 需要网络',
-       no_dest:'⚠️ 请输入目的地',explore:'🔭 点击任意位置！',
-       already_saved:'💾 已保存！',saved_ok:'❤️ 已保存！',
-       link_copied:'🔗 链接已复制！',loc_fail:'📍 请开启定位' },
-  ta:{ nav_map:'வரைபடம்',nav_dir:'வழிகாட்டல்',nav_saved:'சேமித்தவை',nav_search:'தேடல்',
-       nav_style:'வரைபட பாணி',l_standard:'நிலையான',l_satellite:'செயற்கைக்கோள்',
-       md_drive:'ஓட்டுதல்',md_walk:'நடைபயணம்',go:'வழிகாட்டல் பெறுக',
-       search_ph:'G Map தேடுக…',from_ph:'இருந்து…',to_ph:'வரை…',
-       loc_found:'📍 இடம் கிடைத்தது!',route_ok:'✅ பாதை கிடைத்தது!',
-       pp_dir:'வழிகாட்டல்',pp_save:'சேமி',pp_share:'பகிர்',pp_sv:'தெரு காட்சி',
-       ch_food:'உணவு',ch_hotel:'ஹோட்டல்',ch_fuel:'பெட்ரோல்',ch_hosp:'மருத்துவமனை',
-       nav_explore:'ஆராய்',nav_loc:'என் இடம்',nav_traffic:'போக்குவரத்து',
-       nav_weather:'வானிலை',nav_lang:'மொழி',collapse:'மடக்கு',
-       map_style:'வரைபட பாணி',l_terrain:'நிலப்பரப்பு',l_cycle:'சைக்கிள்',l_transit:'போக்குவரத்து',
-       btn_3d:'3D',btn_trf:'போக்குவரத்து',ch_pharm:'மருந்தகம்',ch_school:'பள்ளிகள்',
-       ch_park:'பூங்காக்கள்',ch_cafe:'கஃபே',ch_cinema:'சினிமா',ch_market:'சந்தை',
-       ch_bank:'வங்கி',est_time:' மதிப்பிட்ட நேரம்',distance:' தூரம்',via:' வழியாக',
-       md_transit:'போக்குவரத்து',md_cycle:'சைக்கிள்',routing:'🛣️ பாதை கணக்கிடுகிறது…',
-       route_fail:'⚠️ பாதை கிடைக்கவில்லை',no_net:'🌐 இணையம் தேவை',
-       no_dest:'⚠️ இலக்கை உள்ளிடவும்',explore:'🔭 எங்கும் தட்டவும்!',
-       already_saved:'💾 ஏற்கனவே சேமித்தது!',saved_ok:'❤️ சேமிக்கப்பட்டது!',
-       link_copied:'🔗 இணைப்பு நகலெடுக்கப்பட்டது!',loc_fail:'📍 இருப்பிடத்தை இயக்கவும்' },
+var LANGS={
+  en:{flag:'🇬🇧',name:'English'},hi:{flag:'🇮🇳',name:'हिन्दी'},
+  gu:{flag:'🇮🇳',name:'ગુજરાતી'},ar:{flag:'🇸🇦',name:'العربية'},
+  fr:{flag:'🇫🇷',name:'Français'},es:{flag:'🇪🇸',name:'Español'},
+  zh:{flag:'🇨🇳',name:'中文'},ta:{flag:'🇮🇳',name:'தமிழ்'}
 };
-const LANG_META = {
-  en:{flag:'🇬🇧',name:'English'},  hi:{flag:'🇮🇳',name:'हिन्दी'},
-  gu:{flag:'🇮🇳',name:'ગુજરાતી'}, ar:{flag:'🇸🇦',name:'العربية'},
-  fr:{flag:'🇫🇷',name:'Français'}, es:{flag:'🇪🇸',name:'Español'},
-  zh:{flag:'🇨🇳',name:'中文'},     ta:{flag:'🇮🇳',name:'தமிழ்'},
+
+var TILE={
+  standard:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
+  satellite:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  terrain:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+  cycle:'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
+  transit:'https://tile.openstreetmap.de/{z}/{x}/{y}.png'
 };
-const t = k => (I18N[curLang] && I18N[curLang][k]) || (I18N.en[k]) || k;
+var LABEL_URL='https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png';
 
-function applyLang() {
-  document.querySelectorAll('[data-i18n]').forEach(el => {
-    const k = el.getAttribute('data-i18n');
-    el.textContent = t(k);
-  });
-  document.getElementById('sinp').placeholder = t('search_ph');
-  document.getElementById('finp').placeholder = t('from_ph');
-  document.getElementById('tinp').placeholder = t('to_ph');
-  // RTL for Arabic
-  document.documentElement.dir = curLang === 'ar' ? 'rtl' : 'ltr';
-}
-
-/* ── TILE URLs ── */
-// CartoDB Voyager = ALL place names: streets, cities, towns, villages, islands, countries
-// This is the most label-rich free tile available
-const TILE = {
-  standard:  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-  satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  terrain:   'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
-  cycle:     'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
-  transit:   'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
-};
-// Labels-only overlay for satellite (shows all names over imagery)
-const LABEL_URL = 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png';
-
-/* ── ICO lookup ── */
-const ICO={restaurant:'🍽️',cafe:'☕',bar:'🍺',pub:'🍺',fast_food:'🌮',
+var ICO={restaurant:'🍽️',cafe:'☕',bar:'🍺',pub:'🍺',fast_food:'🌮',
   hotel:'🏨',motel:'🏨',hostel:'🛏️',hospital:'🏥',clinic:'🏥',dentist:'🦷',
   school:'🏫',university:'🎓',college:'🎓',bank:'🏦',atm:'🏧',
   pharmacy:'💊',chemist:'💊',fuel:'⛽',parking:'🅿️',
@@ -858,330 +377,435 @@ const ICO={restaurant:'🍽️',cafe:'☕',bar:'🍺',pub:'🍺',fast_food:'🌮
   place_of_worship:'🙏',church:'⛪',mosque:'🕌',temple:'🛕',
   city:'🌆',town:'🏘️',village:'🏡',hamlet:'🏡',suburb:'🏙️',
   island:'🏝️',country:'🌍',state:'🗺️',county:'📍',
-  road:'🛣️',water:'💧',river:'🌊',forest:'🌲',mountain:'⛰️',beach:'🏖️',
+  road:'🛣️',water:'💧',river:'🌊',forest:'🌲',mountain:'⛰️',beach:'🏖️'};
+function ico(t,c){return ICO[t]||ICO[c]||'📍';}
+function cap(s){return s?s.charAt(0).toUpperCase()+s.slice(1):'';}
+function esc(s){var d=document.createElement('div');d.textContent=s||'';return d.innerHTML;}
+var NOM='https://nominatim.openstreetmap.org';
+var OSRM_MODE={drive:'car',transit:'car',walk:'foot',cycle:'bike'};
+var RT_COLOR={drive:'#007aff',transit:'#9b59b6',walk:'#34c759',cycle:'#ff9500'};
+var TURN={
+  'turn-right':'↪️','turn-left':'↩️','turn-slight-right':'↗️','turn-slight-left':'↖️',
+  'turn-sharp-right':'⤴️','turn-sharp-left':'⤵️','roundabout':'🔄','depart':'🚩',
+  'arrive':'📍','continue':'⬆️','merge':'🔀','fork':'⑂','end of road':'🔚'
 };
-const ico = (tp,cl) => ICO[tp]||ICO[cl]||'📍';
-const cap = s => s ? s.charAt(0).toUpperCase()+s.slice(1) : '';
-const esc = s => { const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; };
-const NOM = 'https://nominatim.openstreetmap.org';
 
-/* ══════════════════════
-   INIT
-══════════════════════ */
-function init() {
-  try { saved = JSON.parse(localStorage.getItem('gmap_sv')||'[]'); } catch(e){ saved=[]; }
-  try { curLang = localStorage.getItem('gmap_lang')||'en'; } catch(e){}
-  applyLang();
+var FB={
+  restaurant:['Spice Garden','Royal Kitchen','Café Central','Food Plaza','Taste of India'],
+  hotel:['Grand Palace','City Inn','Star Hotel','Comfort Stay','Metro Lodge'],
+  fuel:['HP Petrol','BPCL Fuel','Indian Oil','Shell','Reliance Petrol'],
+  hospital:['City Hospital','LifeLine Clinic','Apollo Medical','Metro Hospital','Care Centre'],
+  atm:['SBI ATM','HDFC ATM','ICICI ATM','Axis ATM','Kotak ATM'],
+  pharmacy:['MedPlus','Apollo Pharmacy','Health Plus','Jan Aushadhi','Care Pharmacy'],
+  school:['Bright School','City Academy','St Marys','DPS','Modern School'],
+  park:['City Garden','Central Park','Green Zone','Peoples Park','Riverside Garden'],
+  cafe:['Café Coffee Day','Starbucks','Barista','Third Wave Coffee','The Brew Room'],
+  cinema:['PVR Cinemas','INOX','Cinepolis','Carnival Cinema','Fun Republic'],
+  supermarket:['DMart','Big Bazaar','Reliance Fresh','More Supermarket','Spencers'],
+  bank:['SBI Branch','HDFC Bank','ICICI Bank','Axis Bank','Bank of Baroda']
+};
+
+function init(){
+  try{saved=JSON.parse(localStorage.getItem('gmap_sv')||'[]');}catch(e){saved=[];}
+  try{curLang=localStorage.getItem('gmap_lang')||'en';}catch(e){}
   buildLangDrop();
   buildMap();
-
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(pos => {
-      lat0 = pos.coords.latitude;
-      lng0 = pos.coords.longitude;
-      // NO flyTo on init — just setView, no animation → fixes boomerang
-      GM.setView([lat0, lng0], 15);
+  if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(function(pos){
+      lat0=pos.coords.latitude;lng0=pos.coords.longitude;
+      GM.setView([lat0,lng0],15);
       addUserMark();
-      toast(t('loc_found'));
-      navigator.geolocation.watchPosition(p => {
-        lat0 = p.coords.latitude; lng0 = p.coords.longitude;
-        uMark?.setLatLng([lat0,lng0]);
-        uCircle?.setLatLng([lat0,lng0]);
-      }, null, { enableHighAccuracy:true });
-    }, () => toast(t('loc_fail')), { enableHighAccuracy:true, timeout:8000 });
+      toast('📍 Location found!');
+      navigator.geolocation.watchPosition(function(p){
+        lat0=p.coords.latitude;lng0=p.coords.longitude;
+        if(uMark)uMark.setLatLng([lat0,lng0]);
+        if(uCircle)uCircle.setLatLng([lat0,lng0]);
+      },null,{enableHighAccuracy:true});
+    },function(){toast('📍 Enable location for your position');},{enableHighAccuracy:true,timeout:8000});
   }
-  setTimeout(() => document.getElementById('splash').classList.add('gone'), 2500);
+  setTimeout(function(){document.getElementById('splash').classList.add('gone');},2500);
 }
 
-function buildMap() {
-  GM = L.map('map', {
-    center:[lat0,lng0], zoom:14,
-    zoomControl:false, attributionControl:false, maxZoom:19,
-    // Disable inertia to prevent map "boomerang" bounce
-    inertia:false,
-    // Smooth wheel zoom
-    wheelPxPerZoomLevel:80,
+function buildMap(){
+  GM=L.map('map',{center:[lat0,lng0],zoom:14,zoomControl:false,attributionControl:false,maxZoom:19,inertia:false,wheelPxPerZoomLevel:80});
+  setLayer('standard',document.querySelector('.lpr'));
+  GM.on('mousemove',function(e){
+    document.getElementById('clat').textContent=e.latlng.lat.toFixed(5);
+    document.getElementById('clng').textContent=e.latlng.lng.toFixed(5);
   });
-  setLayer('standard', document.querySelector('.lpr'));
-  GM.on('mousemove', e => {
-    document.getElementById('clat').textContent = e.latlng.lat.toFixed(5);
-    document.getElementById('clng').textContent = e.latlng.lng.toFixed(5);
-  });
-  GM.on('touchmove', e => {
-    const c = GM.getCenter();
-    document.getElementById('clat').textContent = c.lat.toFixed(5);
-    document.getElementById('clng').textContent = c.lng.toFixed(5);
-  });
-  GM.on('zoomend moveend', updateScale);
-  GM.on('click', onMapClick);
-  ready = true;
-  updateScale();
+  GM.on('zoomend',updateScale);GM.on('moveend',updateScale);
+  GM.on('click',onMapClick);
+  ready=true;updateScale();
 }
 
-/* ══════════════════════
-   TILE LAYERS
-   CartoDB Voyager standard = richest labels (all streets, cities, villages, islands)
-   Satellite + Carto label overlay = labels over imagery
-══════════════════════ */
-function setLayer(name, el) {
-  if (baseTile)  { GM.removeLayer(baseTile);  baseTile=null; }
-  if (labelTile) { GM.removeLayer(labelTile); labelTile=null; }
-  curLayer = name;
-  baseTile = L.tileLayer(TILE[name]||TILE.standard, {
-    maxZoom:19, crossOrigin:true, subdomains:'abcd'
-  }).addTo(GM);
-  if (name==='satellite') {
-    labelTile = L.tileLayer(LABEL_URL, {
-      maxZoom:19, crossOrigin:true, subdomains:'abcd', zIndex:300
-    }).addTo(GM);
+function setLayer(name,el){
+  if(baseTile){GM.removeLayer(baseTile);baseTile=null;}
+  if(labelTile){GM.removeLayer(labelTile);labelTile=null;}
+  curLayer=name;
+  baseTile=L.tileLayer(TILE[name]||TILE.standard,{maxZoom:19,crossOrigin:true,subdomains:'abcd'}).addTo(GM);
+  if(name==='satellite'){
+    labelTile=L.tileLayer(LABEL_URL,{maxZoom:19,crossOrigin:true,subdomains:'abcd',zIndex:300}).addTo(GM);
   }
-  document.getElementById('map').className = 'm-'+name;
-  document.querySelectorAll('.lpr').forEach(o=>o.classList.remove('sel'));
-  el?.classList.add('sel');
+  document.getElementById('map').className='m-'+name;
+  document.querySelectorAll('.lpr').forEach(function(o){o.classList.remove('sel');});
+  if(el)el.classList.add('sel');
   closeLP();
-  toast('🗺️ '+t('l_'+name));
+  toast('🗺️ '+cap(name)+' view');
 }
 
-/* ══════════════════════
-   USER MARKER
-══════════════════════ */
-function addUserMark() {
-  uMark && GM.removeLayer(uMark);
-  uCircle && GM.removeLayer(uCircle);
-  const uIco = L.divIcon({
-    html:'<div style="position:relative"><div class="udot"></div><div class="uring"></div></div>',
-    iconSize:[14,14], iconAnchor:[7,7], className:''
-  });
-  uMark = L.marker([lat0,lng0],{icon:uIco,zIndexOffset:1000}).addTo(GM);
-  uCircle = L.circle([lat0,lng0],{radius:70,color:'#007aff',fillColor:'#007aff',fillOpacity:.08,weight:1}).addTo(GM);
+function addUserMark(){
+  if(uMark)GM.removeLayer(uMark);
+  if(uCircle)GM.removeLayer(uCircle);
+  var uIco=L.divIcon({html:'<div style="position:relative"><div class="udot"></div><div class="uring"></div></div>',iconSize:[14,14],iconAnchor:[7,7],className:''});
+  uMark=L.marker([lat0,lng0],{icon:uIco,zIndexOffset:1000}).addTo(GM);
+  uCircle=L.circle([lat0,lng0],{radius:70,color:'#007aff',fillColor:'#007aff',fillOpacity:.08,weight:1}).addTo(GM);
 }
-function locateMe() {
-  if (!ready) return;
-  if (uMark) { GM.setView([lat0,lng0],16); return; }
-  navigator.geolocation?.getCurrentPosition(
-    pos => { lat0=pos.coords.latitude; lng0=pos.coords.longitude; addUserMark(); GM.setView([lat0,lng0],16); toast(t('loc_found')); },
-    () => toast(t('loc_fail'))
-  );
+function locateMe(){
+  if(!ready)return;
+  if(uMark){GM.setView([lat0,lng0],16);return;}
+  if(navigator.geolocation)navigator.geolocation.getCurrentPosition(function(pos){
+    lat0=pos.coords.latitude;lng0=pos.coords.longitude;addUserMark();GM.setView([lat0,lng0],16);toast('📍 Located!');
+  },function(){toast('⚠️ Location unavailable');});
 }
-
-/* ══════════════════════
-   SCALE BAR
-══════════════════════ */
-function updateScale() {
-  if (!GM) return;
-  const z=GM.getZoom(), lat=GM.getCenter().lat;
-  const mpp=156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z);
-  const px=72, m=mpp*px;
+function updateScale(){
+  if(!GM)return;
+  var z=GM.getZoom(),lat=GM.getCenter().lat;
+  var mpp=156543.03392*Math.cos(lat*Math.PI/180)/Math.pow(2,z);
+  var px=72,m=mpp*px;
   document.getElementById('scaleline').style.width=px+'px';
-  document.getElementById('scalelbl').textContent=m>1000?`${(m/1000).toFixed(1)} km`:`${Math.round(m)} m`;
+  document.getElementById('scalelbl').textContent=m>1000?(m/1000).toFixed(1)+' km':Math.round(m)+' m';
 }
-
-/* ══════════════════════
-   SIDEBAR (desktop)
-══════════════════════ */
-function toggleSB() {
+function toggleSB(){
   sbOpen=!sbOpen;
   document.getElementById('sidebar').classList.toggle('exp',sbOpen);
-  const lv=sbOpen?'216px':'68px';
+  var lv=sbOpen?'216px':'68px';
   document.getElementById('topbar').style.left=lv;
   document.getElementById('bbar').style.left=lv;
   document.getElementById('rtp').style.left=sbOpen?'226px':'78px';
   document.getElementById('pp').style.left=sbOpen?'210px':'68px';
 }
-function setNav(el,view) {
-  document.querySelectorAll('#sidebar .nav').forEach(n=>n.classList.remove('on'));
+function setNav(el,view){
+  document.querySelectorAll('#sidebar .nav').forEach(function(n){n.classList.remove('on');});
   el.classList.add('on');
-  if (view==='saved') showSaved();
-  else if (view==='explore') toast(t('explore'));
+  if(view==='saved')showSaved();
+  else if(view==='explore')toast('🔭 Tap anywhere to explore!');
 }
-/* mobile bottom nav */
-function mobNav(el, view) {
-  document.querySelectorAll('.mni').forEach(n=>n.classList.remove('on'));
+function mobNav(el,view){
+  document.querySelectorAll('.mni').forEach(function(n){n.classList.remove('on');});
   el.classList.add('on');
-  if (view==='map') { closeRt(); closePP(); }
-  else if (view==='search') { document.getElementById('sinp').focus(); }
-  else if (view==='dir') { openRt(); }
-  else if (view==='saved') { showSaved(); }
-  else if (view==='layers') { toggleLP(); }
+  if(view==='map'){closeRt();closePP();}
+  else if(view==='search'){document.getElementById('sinp').focus();}
+  else if(view==='dir'){openRt();}
+  else if(view==='saved'){showSaved();}
+  else if(view==='layers'){toggleLP();}
 }
-
-/* ══════════════════════
-   LAYER PICKER
-══════════════════════ */
-function toggleLP(){ document.getElementById('lpick').classList.toggle('open'); }
-function closeLP() { document.getElementById('lpick').classList.remove('open'); }
-
-/* ══════════════════════
-   LANGUAGE
-══════════════════════ */
-function buildLangDrop() {
-  const box = document.getElementById('langdrop');
-  box.innerHTML = Object.entries(LANG_META).map(([code,{flag,name}])=>
-    `<div class="langopt${code===curLang?' sel':''}" onclick="setLang('${code}',this)">
-       <span style="font-size:17px">${flag}</span><span>${name}</span>
-     </div>`
-  ).join('');
+function toggleLP(){document.getElementById('lpick').classList.toggle('open');}
+function closeLP(){document.getElementById('lpick').classList.remove('open');}
+function buildLangDrop(){
+  var box=document.getElementById('langdrop');
+  box.innerHTML=Object.entries(LANGS).map(function(e){
+    var code=e[0],meta=e[1];
+    return '<div class="langopt'+(code===curLang?' sel':'')+'" onclick="setLang(\''+code+'\',this)"><span style="font-size:17px">'+meta.flag+'</span><span>'+meta.name+'</span></div>';
+  }).join('');
 }
-function toggleLang() { document.getElementById('langdrop').classList.toggle('open'); }
-function closeLang()  { document.getElementById('langdrop').classList.remove('open'); }
-function setLang(code, el) {
-  curLang = code;
-  try { localStorage.setItem('gmap_lang', code); } catch(e){}
-  applyLang();
-  document.querySelectorAll('.langopt').forEach(o=>o.classList.remove('sel'));
-  el?.classList.add('sel');
+function toggleLang(){document.getElementById('langdrop').classList.toggle('open');}
+function openLang(){document.getElementById('langdrop').classList.toggle('open');}
+function closeLang(){document.getElementById('langdrop').classList.remove('open');}
+function setLang(code,el){
+  curLang=code;
+  try{localStorage.setItem('gmap_lang',code);}catch(e){}
+  document.querySelectorAll('.langopt').forEach(function(o){o.classList.remove('sel');});
+  if(el)el.classList.add('sel');
   closeLang();
-  // Re-apply placeholder
-  document.getElementById('sinp').placeholder = t('search_ph');
-  document.getElementById('finp').placeholder = t('from_ph');
-  document.getElementById('tinp').placeholder = t('to_ph');
-  toast('🌐 '+LANG_META[code].name);
+  toast('🌐 '+LANGS[code].name);
+  document.documentElement.dir=code==='ar'?'rtl':'ltr';
 }
-
-/* ══════════════════════
-   SEARCH
-══════════════════════ */
-function onSI(q) {
+function onSI(q){
   clearTimeout(sTimer);
   document.getElementById('sdrop').innerHTML='';
-  if (!q.trim()) { closeDrop(); return; }
-  sTimer = setTimeout(()=>doSearch(q),320);
+  if(!q.trim()){closeDrop();return;}
+  sTimer=setTimeout(function(){doSearch(q);},320);
 }
-async function doSearch(q) {
-  try {
-    const r = await fetch(`${NOM}/search?q=${encodeURIComponent(q)}&format=json&limit=9&addressdetails=1`,
-      {headers:{'Accept-Language':curLang+',en'}});
+async function doSearch(q){
+  try{
+    var r=await fetch(NOM+'/search?q='+encodeURIComponent(q)+'&format=json&limit=9&addressdetails=1',{headers:{'Accept-Language':curLang+',en'}});
     renderDrop(await r.json());
-  } catch(e){ renderDropOffline(); }
+  }catch(e){
+    var box=document.getElementById('sdrop');
+    box.innerHTML='<div class="sdsec"><div class="sdr"><div class="sdp">⚠️</div><div class="sdi"><div class="sdn">No internet</div></div></div></div>';
+    box.classList.add('open');
+  }
 }
-function renderDrop(data) {
-  const box=document.getElementById('sdrop');
-  if (!data.length) {
-    box.innerHTML=`<div class="sdsec"><div class="sdr"><div class="sdp">🔍</div><div class="sdi"><div class="sdn">No results</div></div></div></div>`;
+function renderDrop(data){
+  var box=document.getElementById('sdrop');
+  if(!data.length){
+    box.innerHTML='<div class="sdsec"><div class="sdr"><div class="sdp">🔍</div><div class="sdi"><div class="sdn">No results</div></div></div></div>';
   } else {
-    const rows=data.map(r=>{
-      const nm=r.display_name.split(',')[0];
-      const addr=r.display_name.split(',').slice(1,3).join(', ').trim();
-      const ii=ico(r.type,r.class);
-      const dk=haversine(lat0,lng0,+r.lat,+r.lon);
-      const ds=dk<1?`${Math.round(dk*1000)} m`:`${dk.toFixed(1)} km`;
-      const sn=nm.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
-      return `<div class="sdr" onclick="pickPlace(${r.lat},${r.lon},'${sn}','${r.type||''}')">
-        <div class="sdp">${ii}</div>
-        <div class="sdi"><div class="sdn">${esc(nm)}</div><div class="sda">${esc(addr)}</div></div>
-        <div class="sdd">${ds}</div>
-      </div>`;
+    var rows=data.map(function(r){
+      var nm=r.display_name.split(',')[0];
+      var addr=r.display_name.split(',').slice(1,3).join(', ').trim();
+      var ii=ico(r.type,r.class);
+      var dk=haversine(lat0,lng0,+r.lat,+r.lon);
+      var ds=dk<1?Math.round(dk*1000)+' m':dk.toFixed(1)+' km';
+      var sn=nm.replace(/'/g,"\\'");
+      return '<div class="sdr" onclick="pickPlace('+r.lat+','+r.lon+',\''+sn+'\',\''+((r.type||'').replace(/'/g,"\\'"))+'\')"><div class="sdp">'+ii+'</div><div class="sdi"><div class="sdn">'+esc(nm)+'</div><div class="sda">'+esc(addr)+'</div></div><div class="sdd">'+ds+'</div></div>';
     }).join('');
-    box.innerHTML=`<div class="sdsec"><div class="sdh">Results</div>${rows}</div>`;
+    box.innerHTML='<div class="sdsec"><div class="sdh">Results</div>'+rows+'</div>';
   }
   box.classList.add('open');
 }
-function renderDropOffline() {
-  const box=document.getElementById('sdrop');
-  box.innerHTML=`<div class="sdsec"><div class="sdr"><div class="sdp">⚠️</div><div class="sdi"><div class="sdn">${t('no_net')}</div></div></div></div>`;
-  box.classList.add('open');
+function openDrop(){if(document.getElementById('sinp').value.trim())document.getElementById('sdrop').classList.add('open');}
+function closeDrop(){document.getElementById('sdrop').classList.remove('open');}
+function clearS(){document.getElementById('sinp').value='';closeDrop();clearPOI();closePP();}
+function onSK(e){
+  if(e.key==='Escape')clearS();
+  if(e.key==='Enter'){var q=document.getElementById('sinp').value.trim();if(q)doSearch(q);}
 }
-function openDrop() { if (document.getElementById('sinp').value.trim()) document.getElementById('sdrop').classList.add('open'); }
-function closeDrop(){ document.getElementById('sdrop').classList.remove('open'); }
-function clearS()   { document.getElementById('sinp').value=''; closeDrop(); clearPOI(); closePP(); }
-function onSK(e) {
-  if (e.key==='Escape') clearS();
-  if (e.key==='Enter') { const q=document.getElementById('sinp').value.trim(); if(q) doSearch(q); }
-}
-function pickPlace(lat,lng,name,type) {
+function pickPlace(lat,lng,name,type){
   closeDrop();
   document.getElementById('sinp').value=name;
   GM.setView([lat,lng],16);
-  clearPOI();
-  dropPin(+lat,+lng,name,type);
-  showPP(name,type,lat,lng);
+  clearPOI();dropPin(+lat,+lng,name,type);showPP(name,type,lat,lng);
 }
-
-/* ══════════════════════
-   MAP CLICK
-══════════════════════ */
-function onMapClick(e) {
-  const {lat,lng}=e.latlng;
-  fetch(`${NOM}/reverse?lat=${lat}&lon=${lng}&format=json`,{headers:{'Accept-Language':curLang+',en'}})
-    .then(r=>r.json())
-    .then(d=>showPP(d.display_name?.split(',')[0]||cs(lat,lng), d.type||'location', lat, lng))
-    .catch(()=>showPP(cs(lat,lng),'location',lat,lng));
+function onMapClick(e){
+  var lat=e.latlng.lat,lng=e.latlng.lng;
+  fetch(NOM+'/reverse?lat='+lat+'&lon='+lng+'&format=json',{headers:{'Accept-Language':curLang+',en'}})
+    .then(function(r){return r.json();})
+    .then(function(d){showPP(d.display_name?d.display_name.split(',')[0]:cs(lat,lng),d.type||'location',lat,lng);})
+    .catch(function(){showPP(cs(lat,lng),'location',lat,lng);});
 }
-const cs=(a,b)=>`${(+a).toFixed(4)}, ${(+b).toFixed(4)}`;
-
-/* ══════════════════════
-   PLACE PANEL
-══════════════════════ */
-function showPP(name,type,lat,lng) {
-  curPl={name,type,lat:+lat,lng:+lng};
+function cs(a,b){return (+a).toFixed(4)+', '+(+b).toFixed(4);}
+function showPP(name,type,lat,lng){
+  curPl={name:name,type:type,lat:+lat,lng:+lng};
   document.getElementById('ppnm').textContent=name;
-  document.getElementById('ppcat').innerHTML=`${ico(type,'')} ${cap(type||'location')}`;
-  document.getElementById('ppcards').innerHTML=`
-    <div class="ppcard"><div class="ppcl">Latitude</div><div class="ppcv">${(+lat).toFixed(6)}</div></div>
-    <div class="ppcard"><div class="ppcl">Longitude</div><div class="ppcv">${(+lng).toFixed(6)}</div></div>
-    <div class="ppcard"><div class="ppcl">Type</div><div class="ppcv">${esc(type)||'—'}</div></div>
-    <div class="ppcard"><div class="ppcl">Elevation</div><div class="ppcv">~${Math.round(Math.random()*60+5)} m</div></div>`;
+  document.getElementById('ppcat').innerHTML=ico(type,'')+' '+cap(type||'location');
+  document.getElementById('ppcards').innerHTML=
+    '<div class="ppcard"><div class="ppcl">Latitude</div><div class="ppcv">'+(+lat).toFixed(6)+'</div></div>'+
+    '<div class="ppcard"><div class="ppcl">Longitude</div><div class="ppcv">'+(+lng).toFixed(6)+'</div></div>'+
+    '<div class="ppcard"><div class="ppcl">Type</div><div class="ppcv">'+(esc(type)||'—')+'</div></div>'+
+    '<div class="ppcard"><div class="ppcl">Elevation</div><div class="ppcv">~'+Math.round(Math.random()*60+5)+' m</div></div>';
   document.getElementById('pp').classList.add('open');
 }
-function closePP()  { document.getElementById('pp').classList.remove('open'); curPl=null; }
-function dirTo()    { if(!curPl)return; document.getElementById('tinp').value=curPl.name; toCoord=[curPl.lat,curPl.lng]; openRt(); closePP(); }
-function saveP() {
+function closePP(){document.getElementById('pp').classList.remove('open');curPl=null;}
+function dirTo(){if(!curPl)return;document.getElementById('tinp').value=curPl.name;toCoord=[curPl.lat,curPl.lng];openRt();closePP();}
+function saveP(){
   if(!curPl)return;
-  if(saved.find(p=>p.name===curPl.name)){toast(t('already_saved'));return;}
-  saved.push({...curPl});
+  if(saved.find(function(p){return p.name===curPl.name;})){toast('💾 Already saved!');return;}
+  saved.push(Object.assign({},curPl));
   try{localStorage.setItem('gmap_sv',JSON.stringify(saved));}catch(e){}
-  toast(t('saved_ok'));
+  toast('❤️ Saved!');
 }
-function shareP() {
+function shareP(){
   if(!curPl)return;
-  const url=`https://www.google.com/maps?q=${curPl.lat},${curPl.lng}`;
-  navigator.clipboard?.writeText(url).then(()=>toast(t('link_copied'))).catch(()=>toast('🔗 '+url));
+  var url='https://www.google.com/maps?q='+curPl.lat+','+curPl.lng;
+  if(navigator.clipboard)navigator.clipboard.writeText(url).then(function(){toast('🔗 Link copied!');}).catch(function(){toast('🔗 '+url);});
+  else toast('🔗 '+url);
 }
-function streetV() {
-  if(!curPl)return;
-  window.open(`https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=${curPl.lat},${curPl.lng}`,'_blank');
-}
-
-/* ══════════════════════
-   ROUTE PANEL — OSRM real road routing
-   OSRM API: https://router.project-osrm.org/route/v1/{mode}/{lng1},{lat1};{lng2},{lat2}
-   Returns: real road geometry + turn-by-turn steps + duration + distance
-══════════════════════ */
-function openRt()  { document.getElementById('rtp').classList.add('open'); }
-function closeRt() {
+function streetV(){if(!curPl)return;window.open('https://www.google.com/maps/@?api=1&map_action=pano&viewpoint='+curPl.lat+','+curPl.lng,'_blank');}
+function openRt(){document.getElementById('rtp').classList.add('open');}
+function closeRt(){
   document.getElementById('rtp').classList.remove('open');
   document.getElementById('rtres').classList.remove('show');
   document.getElementById('rtsteps').classList.remove('show');
   document.getElementById('rtsteps').innerHTML='';
-  clearRouteLines();
-  fromCoord=null; toCoord=null;
+  clearRouteLines();fromCoord=null;toCoord=null;
 }
-function clearRouteLines() {
-  rLines.forEach(l=>{ try{GM.removeLayer(l);}catch(e){} });
-  rLines=[];
+function clearRouteLines(){rLines.forEach(function(l){try{GM.removeLayer(l);}catch(e){}});rLines=[];}
+function setDM(el,m){dmMode=m;document.querySelectorAll('.rtmd').forEach(function(x){x.classList.remove('sel');});el.classList.add('sel');}
+function swapRoute(){
+  var fi=document.getElementById('finp'),ti=document.getElementById('tinp');
+  var tmp=fi.value;fi.value=ti.value;ti.value=tmp;
+  var tc=fromCoord;fromCoord=toCoord;toCoord=tc;
 }
-function setDM(el,m) {
-  dmMode=m;
-  document.querySelectorAll('.rtmd').forEach(x=>x.classList.remove('sel'));
-  el.classList.add('sel');
-}
-function swapRoute() {
-  const fi=document.getElementById('finp');
-  const ti=document.getElementById('tinp');
-  [fi.value,ti.value]=[ti.value,fi.value];
-  [fromCoord,toCoord]=[toCoord,fromCoord];
-}
-
-/* Route input autocomplete */
-let fromTimer2=null, toTimer2=null;
-function onFromInput(q) {
+function onFromInput(q){
   clearTimeout(fromTimer2);
-  if (!q.trim()) { document.getElementById('from-drop').style.display='none'; return; }
-  fromTimer2=setTimeout(()=>routeAutocomp(q,'from-drop',coord=>fromCoord=coord), 350);
+  document.getElementById('from-drop').style.display='none';
+  if(!q.trim())return;
+  fromTimer2=setTimeout(function(){routeAC(q,'from-drop',function(c){fromCoord=c;});},350);
 }
-function onToInput(q) {
+function onToInput(q){
   clearTimeout(toTimer2);
-  if (!q.trim()) { document.getElementById('to-drop').style.display='none'; return; }
-  toTimer2=setTimeout(()=>routeAutocomp(q,'to-drop',coord=>toCoord=coord), 350);
+  document.getElementById('to-drop').style.display='none';
+  if(!q.trim())return;
+  toTimer2=setTimeout(function(){routeAC(q,'to-drop',function(c){toCoord=c;});},350);
 }
-async functio
+async function routeAC(q,dropId,cb){
+  try{
+    var r=await fetch(NOM+'/search?q='+encodeURIComponent(q)+'&format=json&limit=5',{headers:{'Accept-Language':curLang+',en'}});
+    var data=await r.json();
+    var box=document.getElementById(dropId);
+    if(!data.length){box.style.display='none';return;}
+    box.style.display='block';
+    box.innerHTML=data.map(function(d){
+      var nm=d.display_name.split(',')[0];
+      var sn=nm.replace(/'/g,"\\'");
+      return '<div class="rt-acrow" onmousedown="event.preventDefault()" onclick="pickAC(\''+dropId+'\',\''+sn+'\','+d.lat+','+d.lon+')">'+ico(d.type,d.class)+' '+esc(nm)+'</div>';
+    }).join('');
+  }catch(e){}
+}
+function pickAC(dropId,name,lat,lng){
+  var isFrom=dropId==='from-drop';
+  document.getElementById(isFrom?'finp':'tinp').value=name;
+  document.getElementById(dropId).style.display='none';
+  if(isFrom)fromCoord=[+lat,+lng];else toCoord=[+lat,+lng];
+}
+async function calcRoute(){
+  var toVal=document.getElementById('tinp').value.trim();
+  if(!toVal){toast('⚠️ Enter a destination');return;}
+  var fLat=lat0,fLng=lng0;
+  if(fromCoord){fLat=fromCoord[0];fLng=fromCoord[1];}
+  else{
+    var fromVal=document.getElementById('finp').value.trim();
+    if(fromVal&&fromVal!=='My Location'){
+      try{var fr=await fetch(NOM+'/search?q='+encodeURIComponent(fromVal)+'&format=json&limit=1');var fd=await fr.json();if(fd.length){fLat=+fd[0].lat;fLng=+fd[0].lon;fromCoord=[fLat,fLng];}}catch(e){}
+    }
+  }
+  var tLat,tLng;
+  if(toCoord){tLat=toCoord[0];tLng=toCoord[1];}
+  else{
+    try{var tr=await fetch(NOM+'/search?q='+encodeURIComponent(toVal)+'&format=json&limit=1');var td=await tr.json();if(!td.length){toast('⚠️ Destination not found');return;}tLat=+td[0].lat;tLng=+td[0].lon;toCoord=[tLat,tLng];}
+    catch(e){toast('🌐 Internet needed');return;}
+  }
+  toast('🛣️ Finding road route…');
+  clearRouteLines();
+  try{
+    var profile=OSRM_MODE[dmMode]||'car';
+    var url='https://router.project-osrm.org/route/v1/'+profile+'/'+fLng+','+fLat+';'+tLng+','+tLat+'?overview=full&geometries=geojson&steps=true';
+    var res=await fetch(url);
+    var data=await res.json();
+    if(data.code!=='Ok'||!data.routes||!data.routes.length){throw new Error('no route');}
+    var route=data.routes[0];
+    var coords=route.geometry.coordinates.map(function(c){return[c[1],c[0]];});
+    var casing=L.polyline(coords,{color:'white',weight:9,opacity:.5}).addTo(GM);
+    var line=L.polyline(coords,{color:RT_COLOR[dmMode]||'#007aff',weight:6,opacity:.92,lineCap:'round',lineJoin:'round'}).addTo(GM);
+    rLines.push(casing,line);
+    var sIco=L.divIcon({html:'<div style="width:13px;height:13px;background:#007aff;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,122,255,.5)"></div>',iconSize:[13,13],iconAnchor:[6.5,6.5],className:''});
+    var eIco=L.divIcon({html:'<div style="width:30px;height:38px"><div style="width:30px;height:30px;background:#ff3b30;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid white;box-shadow:0 4px 12px rgba(255,59,48,.45)"></div></div>',iconSize:[30,38],iconAnchor:[15,38],className:''});
+    rLines.push(L.marker([fLat,fLng],{icon:sIco}).addTo(GM));
+    rLines.push(L.marker([tLat,tLng],{icon:eIco}).addTo(GM));
+    GM.fitBounds(line.getBounds(),{padding:[60,60]});
+    var secs=route.duration,km=(route.distance/1000).toFixed(1);
+    var mins=Math.round(secs/60);
+    var timeStr=mins<60?mins+' min':Math.floor(mins/60)+'h '+(mins%60)+'m';
+    document.getElementById('rttime').textContent=timeStr;
+    document.getElementById('rtdist').textContent=km+' km';
+    var steps=route.legs&&route.legs[0]?route.legs[0].steps||[]:[];
+    var viaRoad=steps.length>1?steps[1].name||steps[0].name||'—':steps.length?steps[0].name||'—':'—';
+    document.getElementById('rtroad').textContent=viaRoad;
+    document.getElementById('rtres').classList.add('show');
+    var stepsEl=document.getElementById('rtsteps');
+    stepsEl.innerHTML=steps.filter(function(s){return s.maneuver&&s.maneuver.type;}).map(function(s){
+      var si=TURN[s.maneuver.type]||TURN[s.maneuver.type+'-'+(s.maneuver.modifier||'')]||'⬆️';
+      var sd=s.distance<1000?Math.round(s.distance)+' m':(s.distance/1000).toFixed(1)+' km';
+      return '<div class="rtstep"><span class="sti">'+si+'</span><div><div style="font-weight:500;color:var(--t1);font-size:12px">'+esc(s.name||cap(s.maneuver.type))+'</div><div style="font-size:10.5px;color:var(--t3);margin-top:1px">'+sd+'</div></div></div>';
+    }).join('');
+    if(steps.length)stepsEl.classList.add('show');
+    toast('✅ '+km+' km · '+timeStr);
+  }catch(e){
+    var fb=L.polyline([[fLat,fLng],[tLat,tLng]],{color:RT_COLOR[dmMode]||'#007aff',weight:5,opacity:.75,dashArray:'8,5'}).addTo(GM);
+    rLines.push(fb);GM.fitBounds(fb.getBounds(),{padding:[60,60]});
+    toast('⚠️ Road route unavailable — showing direct line');
+  }
+}
+async function nearby(type){
+  if(!ready)return;clearPOI();
+  var ic=ico(type,type);
+  try{
+    var d=2.5/111,bb=(lat0-d)+','+(lng0-d)+','+(lat0+d)+','+(lng0+d);
+    var q='[out:json][timeout:14];(node["amenity"="'+type+'"]('+bb+');way["amenity"="'+type+'"]('+bb+'););out body center 20;';
+    var r=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q));
+    var data=await r.json();
+    var els=data.elements||[];
+    if(els.length){
+      els.slice(0,18).forEach(function(el){
+        var lt=el.lat!=null?el.lat:(el.center?el.center.lat:null);
+        var ln=el.lon!=null?el.lon:(el.center?el.center.lon:null);
+        if(lt&&ln)dropPOI(lt,ln,el.tags&&el.tags.name?el.tags.name:cap(type),type,ic);
+      });
+      toast(ic+' Found '+Math.min(els.length,18)+' nearby');
+    } else fallbackPOI(type,ic);
+  }catch(e){fallbackPOI(type,ic);}
+}
+function fallbackPOI(type,ic){
+  var list=FB[type]||['Place 1','Place 2','Place 3'];
+  list.forEach(function(nm){dropPOI(lat0+(Math.random()-.5)*.05,lng0+(Math.random()-.5)*.05,nm,type,ic);});
+  toast(ic+' Nearby '+cap(type)+' (offline)');
+}
+function dropPOI(lat,lng,name,type,ic){
+  var icon=L.divIcon({html:'<div style="width:30px;height:30px;background:white;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;box-shadow:0 2px 8px rgba(0,0,0,.16);border:1.5px solid rgba(0,0,0,.07)">'+ic+'</div>',iconSize:[30,30],iconAnchor:[15,15],className:''});
+  poiArr.push(L.marker([lat,lng],{icon:icon}).bindPopup('<b>'+esc(name)+'</b><br><small style="color:#8e8e93">'+cap(type)+'</small>').addTo(GM));
+}
+function dropPin(lat,lng,name,type){
+  var ic=ico(type,'');
+  var icon=L.divIcon({html:'<div style="width:32px;height:40px"><div style="width:32px;height:32px;background:#007aff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid white;box-shadow:0 4px 12px rgba(0,122,255,.42);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:15px">'+ic+'</span></div></div>',iconSize:[32,40],iconAnchor:[16,40],className:''});
+  poiArr.push(L.marker([lat,lng],{icon:icon}).addTo(GM));
+}
+function clearPOI(){poiArr.forEach(function(m){try{GM.removeLayer(m);}catch(e){}});poiArr=[];}
+function togTraffic(){
+  trafOn=!trafOn;
+  document.getElementById('vptrf').classList.toggle('on',trafOn);
+  if(trafOn){
+    var lines=[];
+    for(var i=0;i<12;i++){
+      var c=['#34c759','#ff9500','#ff3b30'][Math.floor(Math.random()*3)];
+      var sLat=lat0+(Math.random()-.5)*.08,sLng=lng0+(Math.random()-.5)*.08;
+      lines.push(L.polyline([[sLat,sLng],[sLat+(Math.random()-.5)*.06,sLng+(Math.random()-.5)*.06]],{color:c,weight:5,opacity:.65}));
+    }
+    trafLG=L.layerGroup(lines).addTo(GM);toast('🚦 Traffic ON');
+  }else{if(trafLG){GM.removeLayer(trafLG);trafLG=null;}toast('🚦 Traffic OFF');}
+}
+function togWeather(){
+  wxOn=!wxOn;
+  if(wxOn){
+    var cc=[{l:'Partly Cloudy',i:'⛅'},{l:'Sunny',i:'☀️'},{l:'Hazy',i:'🌫️'},{l:'Clear',i:'🌤️'},{l:'Windy',i:'💨'}];
+    var c=cc[Math.floor(Math.random()*cc.length)];
+    var temp=24+Math.round(Math.random()*12);
+    var el=document.getElementById('wxw');
+    if(!el){el=document.createElement('div');el.id='wxw';document.body.appendChild(el);}
+    el.style.cssText='position:fixed;top:68px;left:50%;transform:translateX(-50%);z-index:460;background:rgba(255,255,255,.96);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border:.5px solid rgba(0,0,0,.1);border-radius:16px;padding:10px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 20px rgba(0,0,0,.11);font-family:var(--font)';
+    el.innerHTML='<span style="font-size:26px">'+c.i+'</span><div><div style="font-size:14px;font-weight:700;color:#1c1c1e">'+temp+'°C · '+c.l+'</div><div style="font-size:11px;color:#8e8e93">Humidity 66% · Wind 12 km/h</div></div><button onclick="document.getElementById(\'wxw\').remove();wxOn=false" style="background:rgba(0,0,0,.07);border:none;border-radius:50%;width:22px;height:22px;cursor:pointer;font-size:11px;margin-left:4px">✕</button>';
+    toast('🌤️ Weather ON');
+  }else{var el2=document.getElementById('wxw');if(el2)el2.remove();toast('🌤️ Weather OFF');}
+}
+function tog3D(){
+  is3D=!is3D;
+  document.getElementById('vp3d').classList.toggle('on',is3D);
+  var c=GM.getContainer();
+  if(is3D){c.style.perspective='900px';c.style.transform='rotateX(20deg) scale(1.1)';c.style.transformOrigin='bottom center';toast('🏙️ 3D ON');}
+  else{c.style.perspective='';c.style.transform='';c.style.transformOrigin='';GM.invalidateSize();toast('🗺️ 3D OFF');}
+}
+function showSaved(){
+  clearPOI();
+  if(!saved.length){toast('❤️ No saved places yet');return;}
+  saved.forEach(function(p){dropPOI(p.lat,p.lng,p.name,p.type||'','❤️');});
+  if(saved[0])GM.setView([saved[0].lat,saved[0].lng],13);
+  toast('❤️ '+saved.length+' saved');
+}
+function toast(msg,ms){
+  ms=ms||2800;var el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(window._tt);
+  window._tt=setTimeout(function(){el.classList.remove('show');},ms);
+}
+function haversine(la1,lo1,la2,lo2){
+  var R=6371,dLa=(la2-la1)*Math.PI/180,dLo=(lo2-lo1)*Math.PI/180;
+  var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){e.preventDefault();document.getElementById('sinp').focus();}
+  if(e.key==='Escape'){clearS();closePP();closeRt();closeLP();closeLang();}
+  if(e.key==='+'&&!e.target.matches('input'))GM&&GM.zoomIn();
+  if(e.key==='-'&&!e.target.matches('input'))GM&&GM.zoomOut();
+  if(e.key==='l'&&!e.target.matches('input'))locateMe();
+});
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#lpick')&&!e.target.closest('[onclick*="LP"]')&&!e.target.closest('[onclick*="toggleLP"]'))closeLP();
+  if(!e.target.closest('#langbtn')&&!e.target.closest('#langdrop'))closeLang();
+  if(!e.target.closest('#from-drop')&&!e.target.closest('#finp'))document.getElementById('from-drop').style.display='none';
+  if(!e.target.closest('#to-drop')&&!e.target.closest('#tinp'))document.getElementById('to-drop').style.display='none';
+});
+init();
+</script>
+</body>
+</html>
