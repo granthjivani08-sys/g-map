@@ -388,6 +388,18 @@ html,body{height:100%;width:100%;overflow:hidden;font-family:var(--font);backgro
 /* Long press ripple */
 .lp-ripple{position:absolute;border-radius:50%;background:rgba(0,122,255,.25);animation:lpRipple .6s ease-out forwards;pointer-events:none}
 @keyframes lpRipple{from{width:0;height:0;opacity:1;margin:0}to{width:60px;height:60px;opacity:0;margin:-30px}}
+
+/* ── LANGUAGE PICKER ── */
+#lang-btn{background:#fff;border:.5px solid var(--brd);border-radius:var(--r14);width:40px;height:40px;display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;box-shadow:var(--sh1);min-width:44px;min-height:44px;flex-shrink:0;position:relative;transition:background .12s}
+#lang-btn:active{background:var(--g4)}
+#lang-drop{position:absolute;top:calc(100% + 6px);right:0;background:#fff;border:.5px solid var(--brd);border-radius:var(--r20);padding:8px;display:none;flex-direction:column;gap:2px;box-shadow:var(--sh3);z-index:700;min-width:180px}
+#lang-drop.open{display:flex;animation:fd .14s ease}
+.lang-opt{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:var(--r10);cursor:pointer;border:1.5px solid transparent;transition:all .12s;min-height:46px}
+.lang-opt:active{background:rgba(0,0,0,.04)}
+.lang-opt.sel{background:var(--blu10);border-color:rgba(0,122,255,.24)}
+.lang-flag{font-size:20px;flex-shrink:0}
+.lang-name{font-size:13px;font-weight:500;color:var(--t2)}
+.lang-opt.sel .lang-name{color:var(--blue)}
 </style>
 </head>
 <body>
@@ -446,6 +458,9 @@ html,body{height:100%;width:100%;overflow:hidden;font-family:var(--font);backgro
   <button class="tbb dsk" id="layer-btn" type="button" title="Map Style">🗂️</button>
   <button class="tbb" onclick="locateMe()" type="button" title="My Location">📍</button>
   <button class="tbb dsk" onclick="openRt()" type="button">🧭</button>
+  <div id="lang-btn" onclick="toggleLangDrop()" title="Language">🌐
+    <div id="lang-drop"></div>
+  </div>
 </div>
 
 <!-- RIGHT TOOLS -->
@@ -708,7 +723,9 @@ function buildMap(){
     center:[lat0,lng0],zoom:14,zoomControl:false,attributionControl:false,maxZoom:19,
     inertia:true,inertiaDeceleration:3000,inertiaMaxSpeed:1200,
     bounceAtZoomLimits:false,tap:true,tapTolerance:15,
-    zoomAnimation:true
+    zoomAnimation:true,
+    worldCopyJump:false,
+    maxBoundsViscosity:0.0
   });
   setLayer('std',null);
   GM.on('move',function(){updateCoordBar();updateZoomLabel();});
@@ -1832,7 +1849,137 @@ showSteps=function(route){
 };
 
 /* ── INIT NEW FEATURES ── */
+
+/* ═══════════════════════════════════════
+   LANGUAGE PICKER — 8 languages
+   ═══════════════════════════════════════ */
+var LANGS_META = {
+  en:{flag:'🇬🇧',name:'English',dir:'ltr'},
+  hi:{flag:'🇮🇳',name:'हिन्दी',dir:'ltr'},
+  gu:{flag:'🇮🇳',name:'ગુજરાતી',dir:'ltr'},
+  ar:{flag:'🇸🇦',name:'العربية',dir:'rtl'},
+  fr:{flag:'🇫🇷',name:'Français',dir:'ltr'},
+  es:{flag:'🇪🇸',name:'Español',dir:'ltr'},
+  zh:{flag:'🇨🇳',name:'中文',dir:'ltr'},
+  ta:{flag:'🇮🇳',name:'தமிழ்',dir:'ltr'},
+  bn:{flag:'🇧🇩',name:'বাংলা',dir:'ltr'},
+  te:{flag:'🇮🇳',name:'తెలుగు',dir:'ltr'},
+};
+var TRANS = {
+  en:{search:'Search places, streets, cities…',from:'My Location',to:'Where to?',getDir:'Get Directions',traffic:'Traffic',layers:'Layers',explore:'Explore',saved:'Saved',map:'Map',recents:'Recents',dir:'Directions',nearby:'Nearby',save:'Save',share:'Share',sv:'Street View',note:'Note',drive:'Drive',transit:'Transit',walk:'Walk',cycle:'Cycle',moto:'Moto',report:'Report Incident',measure:'Measure',navigate:'Navigate',food:'Food',hotels:'Hotels',petrol:'Petrol',hospital:'Hospital',pharmacy:'Pharmacy',schools:'Schools',parks:'Parks',cafes:'Cafés',cinema:'Cinema',markets:'Markets',banks:'Banks',police:'Police',gym:'Gym',airport:'Airport',bus:'Bus Stand'},
+  hi:{search:'जगह, सड़क, शहर खोजें…',from:'मेरी जगह',to:'कहाँ जाना है?',getDir:'दिशाएँ पाएं',traffic:'यातायात',layers:'परतें',explore:'खोजें',saved:'सहेजे',map:'मानचित्र',recents:'हाल के',dir:'दिशाएँ',nearby:'पास में',save:'सहेजें',share:'शेयर',sv:'स्ट्रीट व्यू',note:'नोट',drive:'ड्राइव',transit:'ट्रांज़िट',walk:'पैदल',cycle:'साइकिल',moto:'मोटो',report:'घटना रिपोर्ट',measure:'माप',navigate:'नेविगेट',food:'खाना',hotels:'होटल',petrol:'पेट्रोल',hospital:'अस्पताल',pharmacy:'फार्मेसी',schools:'स्कूल',parks:'पार्क',cafes:'कैफे',cinema:'सिनेमा',markets:'बाज़ार',banks:'बैंक',police:'पुलिस',gym:'जिम',airport:'हवाई अड्डा',bus:'बस स्टैंड'},
+  gu:{search:'જગ્યા, રસ્તો, શહેર શોધો…',from:'મારી જગ્યા',to:'ક્યાં જવું છે?',getDir:'દિશાઓ મેળવો',traffic:'ટ્રાફિક',layers:'સ્તરો',explore:'શોધો',saved:'સાચવ્યા',map:'નકશો',recents:'તાજેતરના',dir:'દિશાઓ',nearby:'પાસે',save:'સાચવો',share:'શેર',sv:'સ્ટ્રીટ વ્યૂ',note:'નોંધ',drive:'ડ્રાઇવ',transit:'ટ્રાન્ઝિટ',walk:'ચાલો',cycle:'સાઇકલ',moto:'મોટો',report:'ઘટના રિપોર્ટ',measure:'માપ',navigate:'નેવિગેટ',food:'ખોરાક',hotels:'હોટેલ',petrol:'પેટ્રોલ',hospital:'હોસ્પિટલ',pharmacy:'ફાર્મસી',schools:'શાળા',parks:'પાર્ક',cafes:'કેફે',cinema:'સિનેમા',markets:'બજાર',banks:'બેંક',police:'પોલીસ',gym:'જિમ',airport:'એરપોર્ટ',bus:'બસ સ્ટેન્ડ'},
+  ar:{search:'ابحث عن أماكن وشوارع ومدن…',from:'موقعي',to:'إلى أين؟',getDir:'الحصول على الاتجاهات',traffic:'حركة المرور',layers:'الطبقات',explore:'استكشاف',saved:'المحفوظة',map:'الخريطة',recents:'الأخيرة',dir:'الاتجاهات',nearby:'قريب',save:'حفظ',share:'مشاركة',sv:'عرض الشارع',note:'ملاحظة',drive:'قيادة',transit:'عبور',walk:'مشي',cycle:'دراجة',moto:'دراجة نارية',report:'الإبلاغ عن حادثة',measure:'قياس',navigate:'تنقل',food:'طعام',hotels:'فنادق',petrol:'وقود',hospital:'مستشفى',pharmacy:'صيدلية',schools:'مدارس',parks:'حدائق',cafes:'مقاهي',cinema:'سينما',markets:'أسواق',banks:'بنوك',police:'شرطة',gym:'صالة رياضية',airport:'مطار',bus:'محطة حافلات'},
+  fr:{search:'Rechercher des lieux, rues, villes…',from:'Ma position',to:'Où aller?',getDir:'Obtenir l'itinéraire',traffic:'Trafic',layers:'Calques',explore:'Explorer',saved:'Enregistrés',map:'Carte',recents:'Récents',dir:'Itinéraire',nearby:'À proximité',save:'Sauvegarder',share:'Partager',sv:'Vue rue',note:'Note',drive:'Conduire',transit:'Transit',walk:'Marcher',cycle:'Vélo',moto:'Moto',report:'Signaler incident',measure:'Mesurer',navigate:'Naviguer',food:'Restauration',hotels:'Hôtels',petrol:'Carburant',hospital:'Hôpital',pharmacy:'Pharmacie',schools:'Écoles',parks:'Parcs',cafes:'Cafés',cinema:'Cinéma',markets:'Marchés',banks:'Banques',police:'Police',gym:'Gym',airport:'Aéroport',bus:'Gare routière'},
+  es:{search:'Buscar lugares, calles, ciudades…',from:'Mi ubicación',to:'¿Adónde ir?',getDir:'Obtener direcciones',traffic:'Tráfico',layers:'Capas',explore:'Explorar',saved:'Guardados',map:'Mapa',recents:'Recientes',dir:'Direcciones',nearby:'Cercano',save:'Guardar',share:'Compartir',sv:'Vista de calle',note:'Nota',drive:'Conducir',transit:'Transporte',walk:'Caminar',cycle:'Bicicleta',moto:'Moto',report:'Reportar incidente',measure:'Medir',navigate:'Navegar',food:'Comida',hotels:'Hoteles',petrol:'Gasolina',hospital:'Hospital',pharmacy:'Farmacia',schools:'Escuelas',parks:'Parques',cafes:'Cafés',cinema:'Cine',markets:'Mercados',banks:'Bancos',police:'Policía',gym:'Gimnasio',airport:'Aeropuerto',bus:'Terminal de autobús'},
+  zh:{search:'搜索地点、街道、城市…',from:'我的位置',to:'去哪里？',getDir:'获取路线',traffic:'交通',layers:'图层',explore:'探索',saved:'已保存',map:'地图',recents:'最近',dir:'路线',nearby:'附近',save:'保存',share:'分享',sv:'街景',note:'笔记',drive:'驾车',transit:'公交',walk:'步行',cycle:'骑行',moto:'摩托',report:'报告事故',measure:'测量',navigate:'导航',food:'餐饮',hotels:'酒店',petrol:'加油站',hospital:'医院',pharmacy:'药房',schools:'学校',parks:'公园',cafes:'咖啡馆',cinema:'电影院',markets:'超市',banks:'银行',police:'警察',gym:'健身房',airport:'机场',bus:'公交站'},
+  ta:{search:'இடங்கள், தெருக்கள், நகரங்களை தேடுங்கள்…',from:'என் இடம்',to:'எங்கு போக வேண்டும்?',getDir:'வழிகாட்டல் பெறுக',traffic:'போக்குவரத்து',layers:'அடுக்குகள்',explore:'ஆராயுங்கள்',saved:'சேமித்தவை',map:'வரைபடம்',recents:'சமீபத்திய',dir:'வழிகாட்டல்',nearby:'அருகில்',save:'சேமி',share:'பகிர்',sv:'தெரு காட்சி',note:'குறிப்பு',drive:'ஓட்டுதல்',transit:'போக்குவரத்து',walk:'நடைபயணம்',cycle:'சைக்கிள்',moto:'மோட்டார்',report:'சம்பவம் அறிக்கை',measure:'அளவிடு',navigate:'வழிசெலுத்து',food:'உணவு',hotels:'விடுதிகள்',petrol:'பெட்ரோல்',hospital:'மருத்துவமனை',pharmacy:'மருந்தகம்',schools:'பள்ளிகள்',parks:'பூங்காக்கள்',cafes:'கஃபேக்கள்',cinema:'சினிமா',markets:'சந்தைகள்',banks:'வங்கிகள்',police:'காவல்',gym:'உடற்பயிற்சி',airport:'விமான நிலையம்',bus:'பேருந்து நிலையம்'},
+  bn:{search:'স্থান, রাস্তা, শহর অনুসন্ধান করুন…',from:'আমার অবস্থান',to:'কোথায় যাবেন?',getDir:'দিকনির্দেশনা পান',traffic:'ট্রাফিক',layers:'স্তর',explore:'অন্বেষণ করুন',saved:'সংরক্ষিত',map:'মানচিত্র',recents:'সাম্প্রতিক',dir:'দিকনির্দেশনা',nearby:'কাছাকাছি',save:'সংরক্ষণ করুন',share:'শেয়ার',sv:'স্ট্রিট ভিউ',note:'নোট',drive:'ড্রাইভ',transit:'ট্রানজিট',walk:'হাঁটুন',cycle:'সাইকেল',moto:'মোটো',report:'ঘটনা রিপোর্ট',measure:'পরিমাপ',navigate:'নেভিগেট',food:'খাবার',hotels:'হোটেল',petrol:'পেট্রোল',hospital:'হাসপাতাল',pharmacy:'ফার্মেসি',schools:'স্কুল',parks:'পার্ক',cafes:'ক্যাফে',cinema:'সিনেমা',markets:'বাজার',banks:'ব্যাংক',police:'পুলিশ',gym:'জিম',airport:'বিমানবন্দর',bus:'বাস স্ট্যান্ড'},
+  te:{search:'ప్రదేశాలు, వీధులు, నగరాలు శోధించండి…',from:'నా స్థానం',to:'ఎక్కడికి వెళ్లాలి?',getDir:'దిశలు పొందండి',traffic:'ట్రాఫిక్',layers:'పొరలు',explore:'అన్వేషించండి',saved:'సేవ్ చేసినవి',map:'మ్యాప్',recents:'తాజా',dir:'దిశలు',nearby:'సమీపంలో',save:'సేవ్',share:'షేర్',sv:'స్ట్రీట్ వ్యూ',note:'నోట్',drive:'డ్రైవ్',transit:'ట్రాన్సిట్',walk:'నడక',cycle:'సైకిల్',moto:'మోటో',report:'సంఘటన నివేదించండి',measure:'కొలత',navigate:'నావిగేట్',food:'ఆహారం',hotels:'హోటళ్ళు',petrol:'పెట్రోల్',hospital:'ఆసుపత్రి',pharmacy:'ఫార్మసీ',schools:'పాఠశాలలు',parks:'పార్కులు',cafes:'కేఫేలు',cinema:'సినిమా',markets:'మార్కెట్లు',banks:'బ్యాంకులు',police:'పోలీస్',gym:'జిమ్',airport:'విమానాశ్రయం',bus:'బస్ స్టాండ్'},
+};
+
+var curLang='en';
+function t(k){return (TRANS[curLang]&&TRANS[curLang][k])||TRANS.en[k]||k;}
+
+function buildLangDrop(){
+  var drop=document.getElementById('lang-drop');
+  drop.innerHTML='';
+  Object.keys(LANGS_META).forEach(function(code){
+    var meta=LANGS_META[code];
+    var opt=document.createElement('div');
+    opt.className='lang-opt'+(code===curLang?' sel':'');
+    opt.dataset.code=code;
+    var flag=document.createElement('span');flag.className='lang-flag';flag.textContent=meta.flag;
+    var name=document.createElement('span');name.className='lang-name';name.textContent=meta.name;
+    opt.appendChild(flag);opt.appendChild(name);
+    opt.addEventListener('click',function(e){e.stopPropagation();setLang(this.dataset.code);});
+    drop.appendChild(opt);
+  });
+}
+
+function toggleLangDrop(){
+  var drop=document.getElementById('lang-drop');
+  drop.classList.toggle('open');
+}
+function closeLangDrop(){
+  document.getElementById('lang-drop').classList.remove('open');
+}
+
+function setLang(code){
+  curLang=code;
+  try{localStorage.setItem('gmap_lang',code);}catch(e){}
+  document.querySelectorAll('.lang-opt').forEach(function(o){
+    o.classList.toggle('sel',o.dataset.code===code);
+  });
+  closeLangDrop();
+  // Apply RTL
+  document.documentElement.dir=LANGS_META[code].dir||'ltr';
+  // Apply all translations
+  applyTranslations();
+  toast('🌐 '+LANGS_META[code].name);
+}
+
+function applyTranslations(){
+  // Search placeholder
+  var sinp=document.getElementById('sinp');
+  if(sinp)sinp.placeholder=t('search');
+  // Route inputs
+  var finp=document.getElementById('finp');
+  if(finp)finp.placeholder=t('from');
+  var tinp=document.getElementById('tinp');
+  if(tinp)tinp.placeholder=t('to');
+  // Get Directions button
+  var rtgo=document.querySelector('.rtgo');
+  if(rtgo)rtgo.textContent=t('getDir');
+  // Drive/Transit/Walk/Cycle/Moto labels
+  var dmlbls=document.querySelectorAll('.rtmd');
+  var dmkeys=['drive','transit','walk','cycle','moto'];
+  var dmicos=['🚗','🚌','🚶','🚴','🏍️'];
+  dmlbls.forEach(function(el,i){
+    if(dmkeys[i])el.innerHTML='<span class="rtmi">'+dmicos[i]+'</span>'+t(dmkeys[i]);
+  });
+  // Mobile nav labels
+  var mniLbls=document.querySelectorAll('.mni-lbl');
+  var mniKeys=['map','search','dir','explore','layers'];
+  mniLbls.forEach(function(el,i){if(mniKeys[i])el.textContent=t(mniKeys[i]);});
+  // Sidebar nav labels
+  var navLbls=document.querySelectorAll('#sidebar .nav .nl');
+  var navKeys=['map','explore','dir','saved','recents',null,'layers','traffic',null,null,null,null];
+  navLbls.forEach(function(el,i){if(navKeys[i])el.textContent=t(navKeys[i]);});
+  // Place action buttons
+  var ppals=document.querySelectorAll('.pal');
+  var ppkeys=['dir','save','share','sv','nearby','note'];
+  ppals.forEach(function(el,i){if(ppkeys[i]&&el.style.color!=='white')el.textContent=t(ppkeys[i]);});
+  // Traffic/Layers vp buttons
+  var vptrf=document.getElementById('vptrf');
+  if(vptrf)vptrf.textContent=t('traffic');
+  // Chips
+  var chips=document.querySelectorAll('.chip');
+  var chipKeys=['food','hotels','petrol','hospital',null,'pharmacy','schools','parks','cafes','cinema','markets','banks','police','gym','airport','bus'];
+  chips.forEach(function(ch,i){
+    if(chipKeys[i]){
+      var ico=ch.querySelector('.chico');
+      ch.textContent='';
+      if(ico)ch.appendChild(ico);
+      ch.appendChild(document.createTextNode(t(chipKeys[i])));
+    }
+  });
+}
+
+function initLang(){
+  try{curLang=localStorage.getItem('gmap_lang')||'en';}catch(e){curLang='en';}
+  buildLangDrop();
+  applyTranslations();
+  document.documentElement.dir=LANGS_META[curLang]&&LANGS_META[curLang].dir||'ltr';
+}
+
+// Close lang drop on outside click
+document.addEventListener('click',function(e){
+  if(!e.target.closest('#lang-btn'))closeLangDrop();
+});
+
 function initNewFeatures(){
+  initLang();
   initVoice();
   initLongPress();
   positionMeasureBar();
