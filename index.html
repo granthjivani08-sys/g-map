@@ -628,12 +628,12 @@ html,body{height:100%;width:100%;overflow:hidden;font-family:var(--font);backgro
 <!-- LAYER PICKER -->
 <div id="lpick">
   <h4>Map Style</h4>
-  <div class="lpr sel" id="lpr-std"><span class="li">🗺️</span><span class="ln">Standard</span></div>
-  <div class="lpr" id="lpr-sat"><span class="li">🛰️</span><span class="ln">Satellite</span></div>
-  <div class="lpr" id="lpr-ter"><span class="li">⛰️</span><span class="ln">Terrain</span></div>
-  <div class="lpr" id="lpr-cyc"><span class="li">🚴</span><span class="ln">Cycling</span></div>
-  <div class="lpr" id="lpr-trn"><span class="li">🚌</span><span class="ln">Transit</span></div>
-  <div class="lpr" id="lpr-drk"><span class="li">🌙</span><span class="ln">Dark Mode</span></div>
+  <div class="lpr sel" id="lpr-std" onclick="setLayer('std',this)" ontouchend="event.preventDefault();setLayer('std',this)"><span class="li">🗺️</span><span class="ln">Standard</span></div>
+  <div class="lpr" id="lpr-sat" onclick="setLayer('sat',this)" ontouchend="event.preventDefault();setLayer('sat',this)"><span class="li">🛰️</span><span class="ln">Satellite</span></div>
+  <div class="lpr" id="lpr-ter" onclick="setLayer('ter',this)" ontouchend="event.preventDefault();setLayer('ter',this)"><span class="li">⛰️</span><span class="ln">Terrain</span></div>
+  <div class="lpr" id="lpr-cyc" onclick="setLayer('cyc',this)" ontouchend="event.preventDefault();setLayer('cyc',this)"><span class="li">🚴</span><span class="ln">Cycling</span></div>
+  <div class="lpr" id="lpr-trn" onclick="setLayer('trn',this)" ontouchend="event.preventDefault();setLayer('trn',this)"><span class="li">🚌</span><span class="ln">Transit</span></div>
+  <div class="lpr" id="lpr-drk" onclick="setLayer('drk',this)" ontouchend="event.preventDefault();setLayer('drk',this)"><span class="li">🌙</span><span class="ln">Dark Mode</span></div>
 </div>
 
 <!-- SIDEBAR (desktop) -->
@@ -870,17 +870,7 @@ function closeLP(){
 document.getElementById('lp-ov').addEventListener('click', closeLP);
 document.getElementById('lp-ov').addEventListener('touchend', function(e){e.preventDefault();closeLP();});
 
-/* Wire up all layer picker items */
-(function(){
-  var layers={std:'std',sat:'sat',ter:'ter',cyc:'cyc',trn:'trn',drk:'drk'};
-  Object.keys(layers).forEach(function(k){
-    var el=document.getElementById('lpr-'+k);
-    if(!el)return;
-    function pick(e){e.stopPropagation();setLayer(k,el);}
-    el.addEventListener('click',pick);
-    el.addEventListener('touchend',function(e){e.preventDefault();pick(e);});
-  });
-})();
+/* Layer picker uses inline onclick — reliable on all devices */
 
 /* Wire up layer button in topbar */
 document.getElementById('layer-btn').addEventListener('click',function(e){e.stopPropagation();openLP();});
@@ -1629,6 +1619,29 @@ function haversine(la1,lo1,la2,lo2){
   var a=Math.sin(dLa/2)*Math.sin(dLa/2)+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dLo/2)*Math.sin(dLo/2);
   return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
 }
+
+function togLiveBuses(){
+  if(window._busOn){
+    window._busOn=false;clearInterval(window._busTimer);
+    (window._busMarkers||[]).forEach(function(m){try{GM.removeLayer(m);}catch(e){}});
+    window._busMarkers=[];toast('\uD83D\uDE8C Live buses OFF');return;
+  }
+  window._busOn=true;
+  var routes=['42A','15B','7C','S1','Express','AC1','99'];
+  var markers=[];
+  for(var i=0;i<10;i++){
+    var la=lat0+(Math.random()-.5)*.1,ln=lng0+(Math.random()-.5)*.1;
+    var rt=routes[Math.floor(Math.random()*routes.length)];
+    var icon=L.divIcon({html:'<div style="background:#af52de;color:white;border-radius:8px;padding:3px 7px;font-size:10px;font-weight:700;box-shadow:0 2px 6px rgba(175,82,222,.4)">'+rt+'</div>',iconSize:[42,22],iconAnchor:[21,11],className:''});
+    var m=L.marker([la,ln],{icon:icon}).addTo(GM);
+    m.bindPopup('<b>Bus '+rt+'</b><br><small>Next stop: '+Math.ceil(Math.random()*5)+' min</small>');
+    markers.push(m);
+  }
+  window._busMarkers=markers;
+  window._busTimer=setInterval(function(){markers.forEach(function(m){var p=m.getLatLng();m.setLatLng([p.lat+(Math.random()-.5)*.002,p.lng+(Math.random()-.5)*.002]);});},3000);
+  toast('\uD83D\uDE8C Showing '+markers.length+' live buses');
+}
+
 function toast(msg,ms){
   ms=ms||2800;var el=document.getElementById('toast');
   el.textContent=msg;el.classList.add('show');
