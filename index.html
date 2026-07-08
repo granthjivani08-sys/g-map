@@ -52,6 +52,7 @@ html,body{height:100%;width:100%;overflow:hidden;font-family:var(--font);backgro
 #map.m-cyc .leaflet-tile-pane{filter:saturate(.90)}
 #map.m-trn .leaflet-tile-pane{filter:saturate(.75) brightness(1.01)}
 #map.m-drk .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) saturate(.8)}
+#map.m-drk2 .leaflet-tile-pane{filter:invert(1) hue-rotate(180deg) brightness(.85) saturate(.8) contrast(1.05)}
 .leaflet-control-zoom,.leaflet-control-attribution{display:none!important}
 .leaflet-popup-content-wrapper{background:#fff!important;color:var(--t1)!important;border-radius:var(--r14)!important;box-shadow:var(--sh3)!important;border:.5px solid var(--brd)!important;padding:0!important}
 .leaflet-popup-content{margin:12px 14px!important;font-family:var(--font)!important;font-size:13px}
@@ -805,6 +806,12 @@ html,body{height:100%;width:100%;overflow:hidden;font-family:var(--font);backgro
   <div class="mni" onclick="mobNav(this,'settings')"><span class="mni-ico">⚙️</span><span class="mni-lbl">More</span></div>
 </div>
 
+
+<div id="geo-toast" style="position:fixed;z-index:920;background:var(--blue);color:white;border-radius:var(--r14);padding:12px 16px;display:none;align-items:center;gap:10px;box-shadow:var(--sh3);left:16px;right:16px;bottom:calc(var(--bot) + var(--safe-b) + 16px)">
+  <span style="font-size:24px" id="gf-ico">📍</span>
+  <div><div style="font-size:13px;font-weight:700" id="gf-nm">Near a saved place</div><div style="font-size:11px;opacity:.8" id="gf-dist"></div></div>
+  <button onclick="this.closest('#geo-toast').classList.remove('show')" type="button" style="background:rgba(255,255,255,.2);border:none;color:white;border-radius:50%;width:28px;height:28px;cursor:pointer;margin-left:auto;min-width:36px;min-height:36px">✕</button>
+</div>
 <div id="toast"></div>
 <script>
 /* ============================================
@@ -830,7 +837,8 @@ var TILES={
   ter:'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
   cyc:'https://{s}.tile-cyclosm.openstreetmap.fr/cyclosm/{z}/{x}/{y}.png',
   trn:'https://tile.openstreetmap.de/{z}/{x}/{y}.png',
-  drk:'https://{s}.basemaps.cartocdn.com/rastertiles/dark_matter/{z}/{x}/{y}{r}.png'
+  drk:'https://{s}.basemaps.cartocdn.com/rastertiles/dark_matter/{z}/{x}/{y}{r}.png',
+  drk2:'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png'
 };
 var LABEL_URL='https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png';
 
@@ -1667,6 +1675,26 @@ document.addEventListener('click',function(e){
   if(!e.target.closest('#tdrop')&&!e.target.closest('#tinp'))document.getElementById('tdrop').style.display='none';
   if(!e.target.closest('#sdrop')&&!e.target.closest('#swrap'))closeDrop();
 });
+
+
+/* GEOFENCE */
+function checkGeofence(){
+  var tog=document.getElementById('tog-geofence');
+  if(!tog||!tog.classList.contains('on'))return;
+  if(!saved||!saved.length)return;
+  saved.forEach(function(p){
+    if(!p.lat||!p.lng)return;
+    var d=haversine(lat0,lng0,p.lat,p.lng);
+    if(d<0.2){
+      var gi=document.getElementById('gf-ico');if(gi)gi.textContent=ico(p.type,'');
+      var gn=document.getElementById('gf-nm');if(gn)gn.textContent='Near: '+p.name;
+      var gd=document.getElementById('gf-dist');if(gd)gd.textContent=fmtDist(d)+' away';
+      var el=document.getElementById('geo-toast');
+      if(el&&!el.classList.contains('show')){el.style.display='flex';el.classList.add('show');setTimeout(function(){el.classList.remove('show');setTimeout(function(){el.style.display='';},300);},5000);}
+    }
+  });
+}
+setInterval(checkGeofence,30000);
 
 /* START */
 init();
